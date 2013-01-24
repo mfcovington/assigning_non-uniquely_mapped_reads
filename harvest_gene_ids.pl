@@ -52,7 +52,7 @@ for (<$sam_fh>) {
 
 if ($count_summary) {
     say "# of reads: $read_count";
-    say "# of unmapped: $unmapped_count";
+    say "# of unmapped: " . ( $unmapped_count // 0 );
 
     say "\n# of best hits";
     say "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
