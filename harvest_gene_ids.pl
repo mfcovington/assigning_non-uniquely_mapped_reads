@@ -10,11 +10,17 @@ use warnings;
 use autodie;
 use feature 'say';
 use Getopt::Long;
+use List::Util 'min';
 
-my ( $sam_filename, $count_summary );
-my $options = GetOptions(
+my ( $sam_filename, $count_summary, $gene_summary );
+my $max_best   = 7;
+# my $max_subopt = 0;
+my $options    = GetOptions(
     "sam_filename=s" => \$sam_filename,
     "count_summary"  => \$count_summary,
+    "gene_summary"   => \$gene_summary,
+    "max_best=i"     => \$max_best,
+    # "max_subopt=i"   => \$max_subopt,
 );
 
 open my $sam_fh, "<", $sam_filename;
@@ -35,19 +41,21 @@ for (<$sam_fh>) {
         next;
     }
 
+    my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
+    my ($subopt_hits) = $_ =~ m|X1:i:(\d+)|;
+
     if ($count_summary) {
-        my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
-        my ($subopt_hits) = $_ =~ m|X1:i:(\d+)|;
         $best_count{$best_hits}++     if defined $best_hits;
         $subopt_count{$subopt_hits}++ if defined $subopt_hits;
     }
 
-    # next unless defined $best_hits && $best_hits > 1;
-    # my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
-    # say $read_id;
-    # say $best_hits;
-    # say $subopt_hits;
-    # say "@genes";
+    next unless defined $best_hits && $best_hits > 1;
+    my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
+    print "$read_id";
+    print "\t$_"
+      for @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+    say "\n";
+
 }
 
 if ($count_summary) {
