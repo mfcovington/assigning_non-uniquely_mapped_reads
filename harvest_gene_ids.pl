@@ -11,8 +11,11 @@ use autodie;
 use feature 'say';
 use Getopt::Long;
 
-my $sam_filename;
-my $options = GetOptions( "sam_filename=s" => \$sam_filename, );
+my ( $sam_filename, $count_summary );
+my $options = GetOptions(
+    "sam_filename=s" => \$sam_filename,
+    "count_summary"  => \$count_summary,
+);
 
 open my $sam_fh, "<", $sam_filename;
 
@@ -24,19 +27,20 @@ my $read_count;
 for (<$sam_fh>) {
     next if $_ =~ m|^@|;
 
-    $read_count++;
+    $read_count++ if $count_summary;
 
     my ( $read_id, $map_flag ) = split /\t/, $_;
-
     if ( $map_flag == 4 ) {
-        $unmapped_count++;
+        $unmapped_count++ if $count_summary;
         next;
     }
 
-    my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
-    my ($subopt_hits) = $_ =~ m|X1:i:(\d+)|;
-    $best_count{$best_hits}++     if defined $best_hits;
-    $subopt_count{$subopt_hits}++ if defined $subopt_hits;
+    if ($count_summary) {
+        my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
+        my ($subopt_hits) = $_ =~ m|X1:i:(\d+)|;
+        $best_count{$best_hits}++     if defined $best_hits;
+        $subopt_count{$subopt_hits}++ if defined $subopt_hits;
+    }
 
     # next unless defined $best_hits && $best_hits > 1;
     # my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
@@ -46,14 +50,16 @@ for (<$sam_fh>) {
     # say "@genes";
 }
 
-say "# of reads: $read_count";
-say "# of unmapped: $unmapped_count";
+if ($count_summary) {
+    say "# of reads: $read_count";
+    say "# of unmapped: $unmapped_count";
 
-say "\n# of best hits";
-say "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
+    say "\n# of best hits";
+    say "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
 
-say "\n# of suboptimal hits";
-say "$_:\t$subopt_count{$_}" for sort { $a <=> $b } keys %subopt_count;
+    say "\n# of suboptimal hits";
+    say "$_:\t$subopt_count{$_}" for sort { $a <=> $b } keys %subopt_count;
+}
 
 __END__
 Sample of what data look like:
