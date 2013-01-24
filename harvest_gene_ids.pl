@@ -11,24 +11,33 @@ use autodie;
 use feature 'say';
 use Getopt::Long;
 use List::Util 'min';
+use File::Basename;
+
+# TODO
+# - make gene id regex abstract
 
 my ( $sam_filename, $count_summary, $gene_summary );
-my $max_best   = 7;
+my $max_best = 7;
+
 # my $max_subopt = 0;
-my $options    = GetOptions(
+my $out_dir = "./";
+my $options = GetOptions(
     "sam_filename=s" => \$sam_filename,
     "count_summary"  => \$count_summary,
     "gene_summary"   => \$gene_summary,
     "max_best=i"     => \$max_best,
     # "max_subopt=i"   => \$max_subopt,
+    "out_dir=s"      => \$out_dir,
 );
-
-open my $sam_fh, "<", $sam_filename;
 
 my %best_count;
 my %subopt_count;
 my $unmapped_count;
 my $read_count;
+
+open my $sam_fh, "<", $sam_filename;
+my $id = fileparse( $sam_filename, ".sam" );
+open my $genes_fh, ">", "$id.genes" if $gene_summary;
 
 for (<$sam_fh>) {
     next if $_ =~ m|^@|;
@@ -51,23 +60,27 @@ for (<$sam_fh>) {
 
     next unless defined $best_hits && $best_hits > 1;
     my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
-    print "$read_id";
-    print "\t$_"
+    print $genes_fh "$read_id";
+    print $genes_fh "\t$_"
       for @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
-    say "\n";
+    say $genes_fh "\n";
 
 }
+close $sam_fh;
+close $genes_fh if $gene_summary;
 
+open my $counts_fh, ">", "$id.counts" if $count_summary;
 if ($count_summary) {
-    say "# of reads: $read_count";
-    say "# of unmapped: " . ( $unmapped_count // 0 );
+    say $counts_fh "# of reads: $read_count";
+    say $counts_fh "# of unmapped: " . ( $unmapped_count // 0 );
 
-    say "\n# of best hits";
-    say "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
+    say $counts_fh "\n# of best hits";
+    say $counts_fh "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
 
-    say "\n# of suboptimal hits";
-    say "$_:\t$subopt_count{$_}" for sort { $a <=> $b } keys %subopt_count;
+    say $counts_fh "\n# of suboptimal hits";
+    say $counts_fh "$_:\t$subopt_count{$_}" for sort { $a <=> $b } keys %subopt_count;
 }
+close $counts_fh if $count_summary;
 
 __END__
 Sample of what data look like:
