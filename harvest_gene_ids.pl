@@ -40,7 +40,7 @@ open my $sam_fh, "<", $sam_filename;
 my $id = fileparse( $sam_filename, ".sam" );
 open my $genes_fh, ">", "$id.genes" if $gene_summary;
 
-for (<$sam_fh>) {
+while (<$sam_fh>) {
     next if $_ =~ m|^@|;
 
     $read_count++ if $count_summary;
@@ -63,7 +63,7 @@ for (<$sam_fh>) {
     my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
     print $genes_fh "$read_id\t";
     say $genes_fh join $delimiter,
-      @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+      sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
 }
 close $sam_fh;
 close $genes_fh if $gene_summary;
