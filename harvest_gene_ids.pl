@@ -18,9 +18,9 @@ use File::Basename;
 
 my ( $sam_filename, $count_summary, $gene_summary );
 my $max_best = 7;
-
 # my $max_subopt = 0;
-my $out_dir = "./";
+my $out_dir  = "./";
+my $delimiter = "|";
 my $options = GetOptions(
     "sam_filename=s" => \$sam_filename,
     "count_summary"  => \$count_summary,
@@ -28,6 +28,7 @@ my $options = GetOptions(
     "max_best=i"     => \$max_best,
     # "max_subopt=i"   => \$max_subopt,
     "out_dir=s"      => \$out_dir,
+    "delimiter=s"    => \$delimiter,
 );
 
 my %best_count;
@@ -60,11 +61,9 @@ for (<$sam_fh>) {
 
     next unless defined $best_hits && $best_hits > 1;
     my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
-    print $genes_fh "$read_id";
-    print $genes_fh "\t$_"
-      for @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
-    say $genes_fh "\n";
-
+    print $genes_fh "$read_id\t";
+    say $genes_fh join $delimiter,
+      @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
 }
 close $sam_fh;
 close $genes_fh if $gene_summary;
