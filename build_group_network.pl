@@ -52,4 +52,10 @@ while (%gene_groups) {
 }
 close $clusters_fh;
 
+open my $sizes_fh, ">", "$id.sizes";
+say $sizes_fh "Size\tNumber of clusters";
+say $sizes_fh "$_\t$cluster_sizes{$_}"
+  for sort { $a <=> $b } keys %cluster_sizes;
+close $sizes_fh;
+
 exit;
