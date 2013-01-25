@@ -17,8 +17,6 @@ my $genes_filename = $ARGV[1];
 open my $genes_fh, "<", $genes_filename;
 
 my %gene_groups;
-my %related_genes;
-
 while (<$genes_fh>) {
     chomp;
     my ( $read_id, $genes ) = split;
@@ -44,7 +42,6 @@ while ( defined $seed_gene ) {
 $cluster_sizes{ scalar keys %cluster }++;
 
 # p %gene_groups;
-# p %related_genes;
 # p %checked;
 p %cluster;
 p %cluster_sizes;
