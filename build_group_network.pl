@@ -21,8 +21,11 @@ while (<$genes_fh>) {
 close $genes_fh;
 
 my %cluster_sizes;
+my $cluster_number;
+my $id = fileparse( $genes_filename, ".genes" );
+open my $clusters_fh, ">", "$id.clusters";
 while (%gene_groups) {
-    my ($group) = keys %gene_groups;
+    my ($group) = sort keys %gene_groups;
     my ($seed_gene) = split /\|/, $group;
     my %checked;
     my %cluster;
@@ -41,9 +44,12 @@ while (%gene_groups) {
         $seed_gene = shift @remainder;
     }
     if ( scalar keys %cluster > 1 ){
-        # TODO: write cluster to file
+        $cluster_number++;
+        say $clusters_fh "CLUSTER $cluster_number:";
+        say $clusters_fh "$_\t$cluster{$_}" for sort keys %cluster;
         $cluster_sizes{ scalar keys %cluster }++;
     }
 }
+close $clusters_fh;
 
 exit;
