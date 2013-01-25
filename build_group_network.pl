@@ -30,8 +30,11 @@ while (%gene_groups) {
         for my $genes ( keys %gene_groups ) {
             next unless $genes =~ m|$seed_gene|;
             my $counts = $gene_groups{$genes};
-            $cluster{$_} += $counts for split /\|/, $genes;
             delete $gene_groups{$genes};
+            my %gene_list;
+            $gene_list{$_} = 1 for split /\|/, $genes;
+            # next if scalar keys %gene_list == 1;
+            $cluster{$_} += $counts for keys %gene_list;
         }
         $checked{$seed_gene}++;
         my @remainder = grep { not $checked{$_} } keys %cluster;
