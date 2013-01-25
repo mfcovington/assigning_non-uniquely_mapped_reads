@@ -33,14 +33,17 @@ while (%gene_groups) {
             delete $gene_groups{$genes};
             my %gene_list;
             $gene_list{$_} = 1 for split /\|/, $genes;
-            # next if scalar keys %gene_list == 1;
+            next if scalar keys %gene_list == 1;
             $cluster{$_} += $counts for keys %gene_list;
         }
         $checked{$seed_gene}++;
         my @remainder = grep { not $checked{$_} } keys %cluster;
         $seed_gene = shift @remainder;
     }
-    $cluster_sizes{ scalar keys %cluster }++;
+    if ( scalar keys %cluster > 1 ){
+        # TODO: write cluster to file
+        $cluster_sizes{ scalar keys %cluster }++;
+    }
 }
 
 exit;
