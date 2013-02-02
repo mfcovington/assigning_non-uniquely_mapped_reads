@@ -10,7 +10,10 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
-local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m{Use of uninitialized value \$previous in string at /Users/mfc/perl5/perlbrew/perls/perl-5.16.1/lib/site_perl/5.16.1/Number/Range.pm line 215.|\d+ already in range|\d+ not in range or already removed|previous|\d+ is > \d+|\d+:\d+ is pointless}};
+
+# Number::Range prints unnecessary warnings; therefore, turn them off
+no warnings 'Number::Range';
+local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|};
 
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
@@ -57,15 +60,6 @@ $i++ for ($range->range);
 say $i;
 
 __END__
-annoying warnings:
-
-Use of uninitialized value $previous in string at /Users/mfc/perl5/perlbrew/perls/perl-5.16.1/lib/site_perl/5.16.1/Number/Range.pm line 215.
-349 already in range at /Users/mfc/git.repos/assigning_non-uniquely_mapped_reads/non-unique_length.pl line 44.
-350 already in range at /Users/mfc/git.repos/assigning_non-uniquely_mapped_reads/non-unique_length.pl line 44.
-600 is > 450 at /Users/mfc/git.repos/assigning_non-uniquely_mapped_reads/non-unique_length.pl line 48.
-
-
-actual output:
 
 300..350
 300..355
