@@ -10,6 +10,7 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
+local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m{Use of uninitialized value \$previous in string at /Users/mfc/perl5/perlbrew/perls/perl-5.16.1/lib/site_perl/5.16.1/Number/Range.pm line 215.|\d+ already in range|\d+ not in range or already removed|previous|\d+ is > \d+|\d+:\d+ is pointless}};
 
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
