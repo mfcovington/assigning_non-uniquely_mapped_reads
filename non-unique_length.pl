@@ -44,10 +44,12 @@ $clusters{$cluster_id} = [@subclusters];
 $clusters{281} = ["Solyc01g096580.2.1|Solyc01g096590.2.1"];
 p %clusters;
 
-# build set of genes in cluster
+# build set of genes in ALL clusters
 my %gene_set;
-for my $subcluster ( @{ $clusters{$cluster_id} } ) {
-    $gene_set{$_}++ for split /\|/, $subcluster;
+for my $cluster_id (keys %clusters) {
+    for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+        $gene_set{$_}++ for split /\|/, $subcluster;
+    }
 }
 p %gene_set;
 
@@ -151,20 +153,24 @@ __END__
     ]
 }
 {
+    Solyc01g096580.2.1   1,
+    Solyc01g096590.2.1   1,
     Solyc05g056050.2.1   2,
     Solyc05g056060.2.1   2,
     Solyc05g056070.2.1   3
 }
 {
+    Solyc01g096580.2.1   3323,
+    Solyc01g096590.2.1   3245,
     Solyc05g056050.2.1   7589,
     Solyc05g056060.2.1   9854,
     Solyc05g056070.2.1   11071
 }
-regex: Solyc05g056050\.2\.1|Solyc05g056060\.2\.1|Solyc05g056070\.2\.1
-total count: 12493
+regex: Solyc05g056050\.2\.1|Solyc05g056060\.2\.1|Solyc01g096580\.2\.1|Solyc01g096590\.2\.1|Solyc05g056070\.2\.1
+total count: 16047
 
 300..350
 300..355
 300..355,450..600
 207
-[Finished in 3.8s]
+[Finished in 5.3s]
