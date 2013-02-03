@@ -17,11 +17,16 @@ no warnings 'Number::Range';
 local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|};
 
 # For intial design and testing, will use:
+# CLUSTER 281:
+# Solyc01g096580.2.1      2215
+# Solyc01g096590.2.1      2215
 # CLUSTER 1001:
 # Solyc05g056050.2.1      3493
 # Solyc05g056060.2.1      9140
 # Solyc05g056070.2.1      9211
 # In the future; however, read in clusters from ID.clusters file and extract all appropriate subclusters from ID.groups file.
+# This is the subcluster for CLUSTER 281:
+# 2215    Solyc01g096580.2.1|Solyc01g096590.2.1
 # These are the subclusters for CLUSTER 1001:
 # 5718    Solyc05g056060.2.1|Solyc05g056070.2.1
 # 3422    Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
@@ -36,6 +41,7 @@ my @subclusters = (
     "Solyc05g056050.2.1|Solyc05g056070.2.1"
 );
 $clusters{$cluster_id} = [@subclusters];
+$clusters{281} = ["Solyc01g096580.2.1|Solyc01g096590.2.1"];
 p %clusters;
 
 # build set of genes in cluster
@@ -135,6 +141,9 @@ say $i;
 
 __END__
 {
+    281    [
+        [0] "Solyc01g096580.2.1|Solyc01g096590.2.1"
+    ],
     1001   [
         [0] "Solyc05g056060.2.1|Solyc05g056070.2.1",
         [1] "Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1",
@@ -158,4 +167,4 @@ total count: 12493
 300..355
 300..355,450..600
 207
-[Finished in 4.8s]
+[Finished in 3.8s]
