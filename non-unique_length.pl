@@ -10,6 +10,7 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
+use Data::Printer;
 
 # Number::Range prints unnecessary warnings; therefore, turn them off
 no warnings 'Number::Range';
@@ -35,12 +36,14 @@ my @subclusters = (
     "Solyc05g056050.2.1|Solyc05g056070.2.1"
 );
 $clusters{$cluster_id} = [@subclusters];
-use Data::Printer;
 p %clusters;
 
-say $clusters{$cluster_id};
-say $_ for split /\|/, $clusters{$cluster_id}->[0];
-say $_ for @{ $clusters{$cluster_id} };
+# build set of genes in cluster
+my %gene_set;
+for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+    $gene_set{$_}++ for split /\|/, $subcluster;
+}
+p %gene_set;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
@@ -93,12 +96,11 @@ __END__
         [2] "Solyc05g056050.2.1|Solyc05g056070.2.1"
     ]
 }
-ARRAY(0x7fab1b012ac8)
-Solyc05g056060.2.1
-Solyc05g056070.2.1
-Solyc05g056060.2.1|Solyc05g056070.2.1
-Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
-Solyc05g056050.2.1|Solyc05g056070.2.1
+{
+    Solyc05g056050.2.1   2,
+    Solyc05g056060.2.1   2,
+    Solyc05g056070.2.1   3
+}
 
 300..350
 300..355
