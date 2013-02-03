@@ -47,7 +47,52 @@ p %gene_set;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
+my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
+open my $sam_fh, "<", $sam_filename;
 
+my $gene_regex = join "|", map { quotemeta } keys %gene_set;
+say "regex: $gene_regex";
+my %counts;
+my $count;
+while (<$sam_fh>){
+    next if /^@/;
+    next unless /$gene_regex/;
+
+
+
+# stolen from harvest_gene_ids.pl ( make into subroutine called best_hits() )
+# ...actually, maybe move this up and run for every line and use info to update appropriate cluster/subcluster
+# so that only need to read through file once
+    # best_hits($_);
+
+    # my ( $read_id, $map_flag ) = split /\t/, $_;
+    # if ( $map_flag == 4 ) {
+    #     $unmapped_count++ if $count_summary;
+    #     next;
+    # }
+
+    # my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
+
+    # next unless defined $best_hits && $best_hits > 1;
+    # my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
+    # my $delimiter = "|";
+    # return join $delimiter,
+    #   sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+
+
+
+
+
+# if xt:a:u, only consider first
+# incorporate code from earlier script to only consider best hits (≤ max number)
+
+    for my $gene ( keys %gene_set ){
+        $counts{$gene}++ if /\Q$gene\E/;
+    }
+    $count++;
+}
+say "total count: $count";
+p %counts;
 
 my $multi_range = Number::Range->new(); # convert this into a hash w/ keys == geneIDs in cluster
 my $multi_count;
@@ -101,9 +146,16 @@ __END__
     Solyc05g056060.2.1   2,
     Solyc05g056070.2.1   3
 }
+{
+    Solyc05g056050.2.1   7589,
+    Solyc05g056060.2.1   9854,
+    Solyc05g056070.2.1   11071
+}
+regex: Solyc05g056050\.2\.1|Solyc05g056060\.2\.1|Solyc05g056070\.2\.1
+total count: 12493
 
 300..350
 300..355
 300..355,450..600
 207
-
+[Finished in 4.8s]
