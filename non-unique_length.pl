@@ -54,6 +54,15 @@ for my $cluster_id (keys %clusters) {
 }
 p %gene_set;
 
+# build ranges data structure (HoAoH)
+my %ranges;
+for my $cluster_id ( keys %clusters ) {
+    for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+        $ranges{$subcluster} = ();
+        push @{ $ranges{$subcluster} }, { $_ => Number::Range->new() }
+          for split /\|/, $subcluster;
+    }
+}
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
 my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
