@@ -90,11 +90,12 @@ while (<$sam_fh>){
 
 
     push my @positions, first_pos($_);
-    say "POS: @positions";
-    other_pos( $_, $best_count ) if $best_count > 1;
+    say "POS before others: @positions";
+    push @positions, other_pos( $_, $best_count ) if $best_count > 1;
+    say "POS after others:  @positions";
 
     # just for monitoring/testing
-    if ($count == 20) {
+    if ($count == 5) {
         p %counts;
         say "best for $count: $best_hits";
         say "total: $total_count";
@@ -141,6 +142,23 @@ sub first_pos {
     return ( "$start..$end" );
 }
 
+sub other_pos {
+    my ( $read, $best_count ) = @_;
+    my ($others) = $read =~ m|XA:Z:([^\s]+)|;
+
+    my @other_positions;
+    my $best_seen_count = 1;
+    for ( split /;/, $others ) {
+        $best_seen_count++;
+        my ( $start, $cigar ) = m|^[^,]+,[+-](\d+),([^,]+),\d+$|;
+        my $end = calc_end( $start, $cigar );
+        push @other_positions, "$start..$end";
+        last if $best_seen_count == $best_count;
+    }
+
+    return ( @other_positions );
+}
+
 sub calc_end {
     my ( $start, $cigar ) = @_;
 
@@ -152,37 +170,6 @@ sub calc_end {
     my $end    = $start + $length;
 
     return $end;
-}
-
-
-sub other_pos {
-    my ( $read, $best_count ) = @_;
-    my ($others) = $read =~ m|XA:Z:([^\s]+)|;
-    say "other: $others";
-
-    my $best_seen_count = 1;
-    for ( split /;/, $others) {
-        $best_seen_count++;
-        say $_;
-        my ( $start, $cigar ) = m|^[^,]+,[+-](\d+),([^,]+),\d+$|;
-        say $start;
-        say $cigar;
-        last if $best_seen_count == $best_count;
-    }
-
-
-    # my ( $start, $cigar ) = ( split /\t/, $read )[ 3, 5 ];
-    # my $matches    = sum( $cigar =~ m|(\d+)M|g );
-    # my $insertions = sum( $cigar =~ m|(\d+)I|g ) || 0;
-    # my $deletions  = sum( $cigar =~ m|(\d+)D|g ) || 0;
-
-    # my $length = $matches + $deletions - $insertions;
-    # my $end    = $start + $length;
-    # say "M: $matches";
-    # say "I: $insertions" if $insertions;
-    # say "D: $deletions"  if $deletions;
-
-    # return ( "$start..$end" );
 }
 
 
@@ -229,11 +216,9 @@ __END__
     Solyc05g056070.2.1   3
 }
 {
-    Solyc01g096580.2.1   1,
-    Solyc01g096590.2.1   1,
-    Solyc05g056050.2.1   13,
-    Solyc05g056060.2.1   16,
-    Solyc05g056070.2.1   17
+    Solyc05g056050.2.1   3,
+    Solyc05g056060.2.1   5,
+    Solyc05g056070.2.1   5
 }
 {
     Solyc01g096580.2.1   768,
@@ -242,47 +227,16 @@ __END__
     Solyc05g056060.2.1   2473,
     Solyc05g056070.2.1   1112
 }
-M: 44
-POS: 803..847
-M: 44
-POS: 2382..2426
-M: 44
-POS: 1767..1811
-M: 44
-POS: 388..432
-M: 44
-POS: 622..666
-M: 44
-POS: 291..335
-M: 44
-POS: 2379..2423
-M: 44
-POS: 2129..2173
-M: 44
-POS: 221..265
-M: 44
-POS: 843..887
-M: 44
-POS: 2192..2236
-M: 44
-POS: 849..893
-M: 44
-POS: 511..555
-M: 44
-POS: 787..831
-M: 44
-POS: 480..524
-M: 44
-POS: 2235..2279
-M: 44
-POS: 561..605
-M: 44
-POS: 1790..1834
-M: 42
-I: 1
-POS: 34..75
-M: 44
-POS: 2333..2377
-best for 20: Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
-total: 40167
+POS before others: 803..847
+POS after others:  803..847 2387..2431
+POS before others: 2382..2426
+POS after others:  2382..2426 798..842
+POS before others: 1767..1811
+POS after others:  1767..1811 270..314
+POS before others: 388..432
+POS after others:  388..432 1972..2016
+POS before others: 622..666
+POS after others:  622..666 661..705 2206..2250
+best for 5: Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
+total: 36122
 [Finished in 0.2s]
