@@ -63,6 +63,13 @@ for my $cluster_id (keys %clusters) {
 }
 # p %uniq_counts;
 
+# build subcluster counts hash
+my %subcluster_counts;
+for my $cluster_id (keys %clusters) {
+    $subcluster_counts{$_} = 0 for @{ $clusters{$cluster_id} };
+}
+# p %subcluster_counts;
+
 # build ranges data structure (HoHoO)
 my %ranges;
 for my $cluster_id ( keys %clusters ) {
