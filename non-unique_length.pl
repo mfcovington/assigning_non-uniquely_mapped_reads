@@ -108,8 +108,8 @@ while (<$sam_fh>){
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
 
-    my ( $subcluster, $best_count ) = best_hits($_);
-    my @best_hits = split /\|/, $subcluster;
+    my ( $subcluster, $best_count, @best_hits ) = best_hits($_);
+    # my @best_hits = split /\|/, $subcluster;
 
     # for my $gene ( keys %gene_set ){
     #     $counts{$gene}++ if /\Q$gene\E/;
@@ -123,6 +123,13 @@ while (<$sam_fh>){
     push @positions, other_pos( $_, $best_count ) if $best_count > 1;
     die "Numbers of hits and positions don't match"
       unless scalar @best_hits == scalar @positions;
+
+    # sort best_hits and positions both by sorted best_hits order
+    # adapted from: http://www.perlmonks.org/?node_id=720562
+    my @sorted_index =
+      sort { $best_hits[$a] cmp $best_hits[$b] } 0 .. $#best_hits;
+    @best_hits = @best_hits[@sorted_index];
+    @positions = @positions[@sorted_index];
 
     # record counts for unique hits, subclusters hits, and relevant reads
     if ( $best_count == 1 ) {
@@ -140,15 +147,15 @@ while (<$sam_fh>){
     }
 
     # # just for monitoring/testing
-    # if ($relevant_count > 50) {
-    #     p %counts;
+    # if ($relevant_count >= 500) {
+    #     # p %counts;
     #     say "best for $relevant_count: $subcluster";
     #     say "total: $total_count";
     #     # p %gene_lengths;
-    #     p %subcluster_counts;
+    #     # p %subcluster_counts;
     #     # p %ranges;
-    #     p %uniq_counts;
-    #     exit;
+    #     # p %uniq_counts;
+    #     last;
     # }
 
 }
@@ -160,6 +167,21 @@ p %subcluster_counts;
 # p %ranges;
 p %uniq_counts;
 
+for my $subcluster ( sort keys %subcluster_counts) {
+    say "$subcluster: $subcluster_counts{$subcluster} reads";
+
+    for ( sort keys $ranges{$subcluster} ) {
+        my $multi_length;
+        $multi_length++ for $ranges{$subcluster}{$_}->range;
+        my $unique_length = $gene_lengths{$_} - $multi_length;
+        die "Unique length is less than zero... $_ $subcluster" if $unique_length < 0;
+        say "$_: $multi_length / $unique_length (multi vs unique length)";
+    }
+}
+
+my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
+say $format;
+
 sub best_hits {
     # adapted from harvest_gene_ids.pl
     my $read = shift;
@@ -168,10 +190,10 @@ sub best_hits {
 
     my $delimiter = "|";
     my $max_best  = 7;
-    my @bests = sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
-    my $best_hits_string = join $delimiter, @bests;
+    my @bests = @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+    my $best_hits_string = join $delimiter, sort @bests;
     my $best_hits_count = scalar @bests;
-    return ( $best_hits_string, $best_hits_count );
+    return ( $best_hits_string, $best_hits_count, @bests );
 }
 
 sub first_pos {
@@ -214,28 +236,15 @@ sub calc_end {
 
 
 
-my $range = Number::Range->new(""); # convert this into a hash w/ keys == geneIDs in cluster
+# my $range = Number::Range->new(""); # convert this into a hash w/ keys == geneIDs in cluster
 
-my $format =  $range->range;
-say $format;
+# $range->addrange("600..450");
+# my $format =  $range->range;
+# say $format;
 
-$range->addrange("300..350");
-$format =  $range->range;
-say $format;
-
-$range->addrange("349..355");
-$format =  $range->range;
-say $format;
-
-$range->addrange("600..450");
-$format =  $range->range;
-say $format;
-
-# say length($_) for split /,/, $range->range;
-
-my $i;
-$i++ for ($range->range);
-say $i;
+# my $i;
+# $i++ for ($range->range);
+# say $i;
 
 __END__
 {
@@ -266,10 +275,19 @@ __END__
     Solyc05g056070.2.1   1329
 }
 total reads: 5493452
-relevant reads: 16047
-
-300..350
-300..355
-300..355,450..600
-207
-[Finished in 58.6s]
+relevant reads: 11426
+Solyc01g096580.2.1|Solyc01g096590.2.1: 2215 reads
+Solyc01g096580.2.1: 412 / 356 (multi vs unique length)
+Solyc01g096590.2.1: 412 / 227 (multi vs unique length)
+Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1: 3422 reads
+Solyc05g056050.2.1: 534 / 496 (multi vs unique length)
+Solyc05g056060.2.1: 534 / 1939 (multi vs unique length)
+Solyc05g056070.2.1: 534 / 578 (multi vs unique length)
+Solyc05g056050.2.1|Solyc05g056070.2.1: 71 reads
+Solyc05g056050.2.1: 46 / 984 (multi vs unique length)
+Solyc05g056070.2.1: 46 / 1066 (multi vs unique length)
+Solyc05g056060.2.1|Solyc05g056070.2.1: 5718 reads
+Solyc05g056060.2.1: 833 / 1640 (multi vs unique length)
+Solyc05g056070.2.1: 830 / 282 (multi vs unique length)
+6..346,364..641,680..890
+[Finished in 56.9s]
