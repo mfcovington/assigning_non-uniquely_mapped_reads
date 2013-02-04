@@ -81,7 +81,8 @@ while (<$sam_fh>){
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
 
-    my ( $best_hits, $best_count ) = best_hits($_);
+    my ( $subcluster, $best_count ) = best_hits($_);
+    my @best_hits = split /\|/, $subcluster;
 
     for my $gene ( keys %gene_set ){
         $counts{$gene}++ if /\Q$gene\E/;
@@ -92,6 +93,8 @@ while (<$sam_fh>){
     push my @positions, first_pos($_);
     say "POS before others: @positions";
     push @positions, other_pos( $_, $best_count ) if $best_count > 1;
+    die "Numbers of hits and positions don't match"
+      unless scalar @best_hits == scalar @positions;
     say "POS after others:  @positions";
 
     # just for monitoring/testing
