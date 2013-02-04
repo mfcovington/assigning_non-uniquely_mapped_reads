@@ -10,6 +10,7 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
+use List::Util 'min';
 use Data::Printer;
 
 # Number::Range prints unnecessary warnings; therefore, turn them off
@@ -59,47 +60,32 @@ my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
 open my $sam_fh, "<", $sam_filename;
 
 my $gene_regex = join "|", map { quotemeta } keys %gene_set;
-say "regex: $gene_regex";
+# say "regex: $gene_regex";
 my %counts;
 my $count;
+my $total_count;
 while (<$sam_fh>){
     next if /^@/;
+    $total_count++;
     next unless /$gene_regex/;
-
-
-
-# stolen from harvest_gene_ids.pl ( make into subroutine called best_hits() )
-# ...actually, maybe move this up and run for every line and use info to update appropriate cluster/subcluster
-# so that only need to read through file once
-    # best_hits($_);
-
-    # my ( $read_id, $map_flag ) = split /\t/, $_;
-    # if ( $map_flag == 4 ) {
-    #     $unmapped_count++ if $count_summary;
-    #     next;
-    # }
-
-    # my ($best_hits)   = $_ =~ m|X0:i:(\d+)|;
-
-    # next unless defined $best_hits && $best_hits > 1;
-    # my @genes = $_ =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
-    # my $delimiter = "|";
-    # return join $delimiter,
-    #   sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
-
-
-
-
-
-# if xt:a:u, only consider first
-# incorporate code from earlier script to only consider best hits (≤ max number)
+    my @best_hits = best_hits($_);
 
     for my $gene ( keys %gene_set ){
         $counts{$gene}++ if /\Q$gene\E/;
     }
     $count++;
+
+    # just for monitoring/testing
+    # if ($count == 5) {
+    #     p %counts;
+    #     say "best for $count: @best_hits";
+    #     say "total: $total_count";
+    #     exit;
+    # }
+
 }
-say "total count: $count";
+say "total reads: $total_count";
+say "relevant reads: $count";
 p %counts;
 
 my $multi_range = Number::Range->new(); # convert this into a hash w/ keys == geneIDs in cluster
@@ -114,6 +100,17 @@ my $multi_count;
     # $multi_count++;
 
 
+sub best_hits {
+    # adapted from harvest_gene_ids.pl
+    my $read = shift;
+    my ($best_hits) = $read =~ m|X0:i:(\d+)|;
+    my @genes = $read =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
+
+    my $delimiter = "|";
+    my $max_best  = 7;
+    return join $delimiter,
+      sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+}
 
 
 
@@ -166,11 +163,11 @@ __END__
     Solyc05g056060.2.1   9854,
     Solyc05g056070.2.1   11071
 }
-regex: Solyc05g056050\.2\.1|Solyc05g056060\.2\.1|Solyc01g096580\.2\.1|Solyc01g096590\.2\.1|Solyc05g056070\.2\.1
-total count: 16047
+total reads: 5458725
+relevant reads: 16047
 
 300..350
 300..355
 300..355,450..600
 207
-[Finished in 5.3s]
+[Finished in 5.1s]
