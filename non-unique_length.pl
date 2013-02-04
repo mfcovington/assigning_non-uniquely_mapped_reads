@@ -43,7 +43,7 @@ my @subclusters = (
 );
 $clusters{$cluster_id} = [@subclusters];
 $clusters{281} = ["Solyc01g096580.2.1|Solyc01g096590.2.1"];
-p %clusters;
+# p %clusters;
 
 # build set of genes in ALL clusters
 my %gene_set;
@@ -52,7 +52,7 @@ for my $cluster_id (keys %clusters) {
         $gene_set{$_}++ for split /\|/, $subcluster;
     }
 }
-p %gene_set;
+# p %gene_set;
 
 # build ranges data structure (HoHoO)
 my %ranges;
@@ -64,20 +64,23 @@ for my $cluster_id ( keys %clusters ) {
     }
 }
 
-# say $_->range for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
-for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
-    my %range = %$range_ref;
-    # addrange("300..350")
-    say $range{$_}->addrange("20..25") for keys $range_ref;
-    say $range{$_}->range for keys $range_ref;
-}
+# p %ranges;
+# exit;
 
-for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
-    my %range = %$range_ref;
-    # addrange("300..350")
-    say $range{$_}->addrange("50..55") for keys $range_ref;
-    say $range{$_}->range for keys $range_ref;
-}
+# say $_->range for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
+# for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
+#     my %range = %$range_ref;
+#     # addrange("300..350")
+#     say $range{$_}->addrange("20..25") for keys $range_ref;
+#     say $range{$_}->range for keys $range_ref;
+# }
+
+# for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
+#     my %range = %$range_ref;
+#     # addrange("300..350")
+#     say $range{$_}->addrange("50..55") for keys $range_ref;
+#     say $range{$_}->range for keys $range_ref;
+# }
 
 
 # say keys $_ for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
@@ -86,7 +89,7 @@ for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
 # my $format =  $range->range;
 
 # p %ranges;
-exit;
+# exit;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
@@ -128,18 +131,66 @@ while (<$sam_fh>){
     die "Numbers of hits and positions don't match"
       unless scalar @best_hits == scalar @positions;
 
-    say "POS after others:  @positions";
-    say $subcluster;
+    # say "POS after others:  @positions";
+    # say $subcluster;
     my %hash;
     @hash{@best_hits} = @positions;
 
+    # for ( @positions) {
+      # p  $ranges{$subcluster};
+    # }
+    # say $_ for  keys $ranges{$subcluster};
+    # p $ranges{$subcluster};
+    # exit;
+    next unless $best_count > 1;
+    my $index = 0;
+    for ( sort keys $ranges{$subcluster}  ) {
+
+        # say $range{$_}->addrange("50..55") for keys $range_ref;
+        # say $range{$_}->range for keys $range_ref;
+        # my $index = 0;
+        # say "v", keys %range;
+        # say "b", $range{"Solyc05g056060.2.1"}->range;
+        # for (@best_hits) {
+            # say "$_ $positions[$index] ";
+            # p $range{$_};
+            # say $range{$_};
+            # $range{$_}->addrange( $positions[$index] );
+        # }
+        # $range{@best_hits}->addrange(@positions);
+        # say "b", $range{$_}->range for keys %range;
+        # $$range_ref{$_}->addrange($positions[0]) for keys $range_ref;
+        # $range{$_}->addrange($positions[0]) for keys %range;
+        # say "dfdf", $_;
+        # say $positions[$index];
+        $ranges{$subcluster}{$_}->addrange($positions[$index]);
+        # exit;
+        # my $index = 0;
+        # for ( sort keys $range_ref) {
+        #     $$range_ref{$_}->addrange($positions[$index]);
+        #     say $positions[$index];
+        #     say $index;
+        #     $index++;
+        #     say "sdsf";
+        # }
+        $index++;
+
+        # $range{'Solyc05g056060.2.1'}->addrange("60..65");
+        # say "b", $range{$_}->range for keys %range;
+    }
+    # use Data::Dumper;
+    # say Dumper $ranges{$subcluster};
+    # p $ranges{$subcluster};
+# exit;
+
     # just for monitoring/testing
-    if ($count == 5) {
+    if ($count == 50) {
         p %counts;
         say "best for $count: $subcluster";
         say "total: $total_count";
-        p %gene_lengths;
-        p %hash;
+        # p %gene_lengths;
+        # p %hash;
+        p %ranges;
         exit;
     }
 
