@@ -59,10 +59,35 @@ my %ranges;
 for my $cluster_id ( keys %clusters ) {
     for my $subcluster ( @{ $clusters{$cluster_id} } ) {
         $ranges{$subcluster} = ();
-        push @{ $ranges{$subcluster} }, { $_ => Number::Range->new() }
+        push @{ $ranges{$subcluster} }, { $_ => Number::Range->new("0..10") }
           for split /\|/, $subcluster;
     }
 }
+
+# say $_->range for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
+for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
+    my %range = %$range_ref;
+    # addrange("300..350")
+    say $range{$_}->addrange("20..25") for keys $range_ref;
+    say $range{$_}->range for keys $range_ref;
+}
+
+for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
+    my %range = %$range_ref;
+    # addrange("300..350")
+    say $range{$_}->addrange("50..55") for keys $range_ref;
+    say $range{$_}->range for keys $range_ref;
+}
+
+
+# say keys $_ for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
+
+
+# my $format =  $range->range;
+
+# p %ranges;
+exit;
+
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
 my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
@@ -98,20 +123,23 @@ while (<$sam_fh>){
     }
     $count++;
 
-
     push my @positions, first_pos($_);
-    say "POS before others: @positions";
     push @positions, other_pos( $_, $best_count ) if $best_count > 1;
     die "Numbers of hits and positions don't match"
       unless scalar @best_hits == scalar @positions;
+
     say "POS after others:  @positions";
+    say $subcluster;
+    my %hash;
+    @hash{@best_hits} = @positions;
 
     # just for monitoring/testing
     if ($count == 5) {
         p %counts;
-        say "best for $count: $best_hits";
+        say "best for $count: $subcluster";
         say "total: $total_count";
         p %gene_lengths;
+        p %hash;
         exit;
     }
 
@@ -227,28 +255,12 @@ __END__
     Solyc05g056060.2.1   2,
     Solyc05g056070.2.1   3
 }
-{
-    Solyc05g056050.2.1   3,
-    Solyc05g056060.2.1   5,
-    Solyc05g056070.2.1   5
-}
-{
-    Solyc01g096580.2.1   768,
-    Solyc01g096590.2.1   639,
-    Solyc05g056050.2.1   1030,
-    Solyc05g056060.2.1   2473,
-    Solyc05g056070.2.1   1112
-}
-POS before others: 803..847
-POS after others:  803..847 2387..2431
-POS before others: 2382..2426
-POS after others:  2382..2426 798..842
-POS before others: 1767..1811
-POS after others:  1767..1811 270..314
-POS before others: 388..432
-POS after others:  388..432 1972..2016
-POS before others: 622..666
-POS after others:  622..666 661..705 2206..2250
-best for 5: Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
-total: 36122
+
+012345678910202122232425
+
+012345678910202122232425
+
+012345678910202122232425505152535455
+
+012345678910202122232425505152535455
 [Finished in 0.2s]
