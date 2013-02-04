@@ -81,7 +81,7 @@ while (<$sam_fh>){
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
 
-    my @best_hits = best_hits($_);
+    my ( $best_hits, $best_count ) = best_hits($_);
 
     for my $gene ( keys %gene_set ){
         $counts{$gene}++ if /\Q$gene\E/;
@@ -91,11 +91,12 @@ while (<$sam_fh>){
 
     push my @positions, first_pos($_);
     say "POS: @positions";
+    other_pos($_) if $best_count > 1;
 
     # just for monitoring/testing
     if ($count == 20) {
         p %counts;
-        say "best for $count: @best_hits";
+        say "best for $count: $best_hits";
         say "total: $total_count";
         p %gene_lengths;
         exit;
@@ -126,8 +127,10 @@ sub best_hits {
 
     my $delimiter = "|";
     my $max_best  = 7;
-    return join $delimiter,
-      sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+    my @bests = sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
+    my $best_hits_string = join $delimiter, @bests;
+    my $best_hits_count = scalar @bests;
+    return ( $best_hits_string, $best_hits_count );
 }
 
 sub first_pos {
@@ -144,6 +147,31 @@ sub first_pos {
     say "D: $deletions"  if $deletions;
 
     return ( "$start..$end" );
+}
+
+
+sub other_pos {
+    my $read = shift;
+    my ($others) = $read =~ m|XA:Z:([^\s]+)|;
+    say "other: $others";
+
+    for ( split /;/, $others) {
+        say $_;
+    }
+
+
+    # my ( $start, $cigar ) = ( split /\t/, $read )[ 3, 5 ];
+    # my $matches    = sum( $cigar =~ m|(\d+)M|g );
+    # my $insertions = sum( $cigar =~ m|(\d+)I|g ) || 0;
+    # my $deletions  = sum( $cigar =~ m|(\d+)D|g ) || 0;
+
+    # my $length = $matches + $deletions - $insertions;
+    # my $end    = $start + $length;
+    # say "M: $matches";
+    # say "I: $insertions" if $insertions;
+    # say "D: $deletions"  if $deletions;
+
+    # return ( "$start..$end" );
 }
 
 
