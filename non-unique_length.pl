@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# FILE_NAME.pl
+# non-unique_length.pl
 # Mike Covington
 # created: 2013-02-01
 #
@@ -79,33 +79,7 @@ for my $cluster_id ( keys %clusters ) {
           for split /\|/, $subcluster;
     }
 }
-
 # p %ranges;
-# exit;
-
-# say $_->range for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
-# for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
-#     my %range = %$range_ref;
-#     # addrange("300..350")
-#     say $range{$_}->addrange("20..25") for keys $range_ref;
-#     say $range{$_}->range for keys $range_ref;
-# }
-
-# for my $range_ref ( @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} } ) {
-#     my %range = %$range_ref;
-#     # addrange("300..350")
-#     say $range{$_}->addrange("50..55") for keys $range_ref;
-#     say $range{$_}->range for keys $range_ref;
-# }
-
-
-# say keys $_ for @{ $ranges{"Solyc01g096580.2.1|Solyc01g096590.2.1"} };
-
-
-# my $format =  $range->range;
-
-# p %ranges;
-# exit;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
@@ -115,7 +89,7 @@ open my $sam_fh, "<", $sam_filename;
 my $gene_regex = join "|", map { quotemeta } keys %gene_set;
 # say "regex: $gene_regex";
 my %counts;
-my $count;
+my $relevant_count;
 my $total_count;
 my %gene_lengths;
 while (<$sam_fh>){
@@ -137,95 +111,54 @@ while (<$sam_fh>){
     my ( $subcluster, $best_count ) = best_hits($_);
     my @best_hits = split /\|/, $subcluster;
 
-    for my $gene ( keys %gene_set ){
+    # for my $gene ( keys %gene_set ){
+    #     $counts{$gene}++ if /\Q$gene\E/;
+    # }
+
+    for my $gene ( @best_hits ){
         $counts{$gene}++ if /\Q$gene\E/;
     }
-    $count++;
 
     push my @positions, first_pos($_);
     push @positions, other_pos( $_, $best_count ) if $best_count > 1;
     die "Numbers of hits and positions don't match"
       unless scalar @best_hits == scalar @positions;
 
-    # say "POS after others:  @positions";
-    # say $subcluster;
-    my %hash;
-    @hash{@best_hits} = @positions;
+    # record counts for unique hits, subclusters hits, and relevant reads
+    if ( $best_count == 1 ) {
+        $uniq_counts{ $best_hits[0] }++;
+        next;
+    }
+    $subcluster_counts{$subcluster}++;
+    $relevant_count++;
 
-    # for ( @positions) {
-      # p  $ranges{$subcluster};
-    # }
-    # say $_ for  keys $ranges{$subcluster};
-    # p $ranges{$subcluster};
-    # exit;
-    next unless $best_count > 1;
+    # populate range data structure
     my $index = 0;
-    for ( sort keys $ranges{$subcluster}  ) {
-
-        # say $range{$_}->addrange("50..55") for keys $range_ref;
-        # say $range{$_}->range for keys $range_ref;
-        # my $index = 0;
-        # say "v", keys %range;
-        # say "b", $range{"Solyc05g056060.2.1"}->range;
-        # for (@best_hits) {
-            # say "$_ $positions[$index] ";
-            # p $range{$_};
-            # say $range{$_};
-            # $range{$_}->addrange( $positions[$index] );
-        # }
-        # $range{@best_hits}->addrange(@positions);
-        # say "b", $range{$_}->range for keys %range;
-        # $$range_ref{$_}->addrange($positions[0]) for keys $range_ref;
-        # $range{$_}->addrange($positions[0]) for keys %range;
-        # say "dfdf", $_;
-        # say $positions[$index];
-        $ranges{$subcluster}{$_}->addrange($positions[$index]);
-        # exit;
-        # my $index = 0;
-        # for ( sort keys $range_ref) {
-        #     $$range_ref{$_}->addrange($positions[$index]);
-        #     say $positions[$index];
-        #     say $index;
-        #     $index++;
-        #     say "sdsf";
-        # }
+    for ( sort keys $ranges{$subcluster} ) {
+        $ranges{$subcluster}{$_}->addrange( $positions[$index] );
         $index++;
-
-        # $range{'Solyc05g056060.2.1'}->addrange("60..65");
-        # say "b", $range{$_}->range for keys %range;
     }
-    # use Data::Dumper;
-    # say Dumper $ranges{$subcluster};
-    # p $ranges{$subcluster};
-# exit;
 
-    # just for monitoring/testing
-    if ($count == 50) {
-        p %counts;
-        say "best for $count: $subcluster";
-        say "total: $total_count";
-        # p %gene_lengths;
-        # p %hash;
-        p %ranges;
-        exit;
-    }
+    # # just for monitoring/testing
+    # if ($relevant_count > 50) {
+    #     p %counts;
+    #     say "best for $relevant_count: $subcluster";
+    #     say "total: $total_count";
+    #     # p %gene_lengths;
+    #     p %subcluster_counts;
+    #     # p %ranges;
+    #     p %uniq_counts;
+    #     exit;
+    # }
 
 }
 say "total reads: $total_count";
-say "relevant reads: $count";
+say "relevant reads: $relevant_count";
 p %counts;
-
-my $multi_range = Number::Range->new(); # convert this into a hash w/ keys == geneIDs in cluster
-my $multi_count;
-
-# loop through reads for sub-cluster
-    # extract start position, length, and strand for each gene in subcluster
-    # my $start # make hash
-    # my $end # make hash
-    # add ranges
-    # $multi_range->addrange("$start..$end");
-    # $multi_count++;
-
+p %gene_lengths;
+p %subcluster_counts;
+# p %ranges;
+p %uniq_counts;
 
 sub best_hits {
     # adapted from harvest_gene_ids.pl
@@ -306,28 +239,37 @@ say $i;
 
 __END__
 {
-    281    [
-        [0] "Solyc01g096580.2.1|Solyc01g096590.2.1"
-    ],
-    1001   [
-        [0] "Solyc05g056060.2.1|Solyc05g056070.2.1",
-        [1] "Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1",
-        [2] "Solyc05g056050.2.1|Solyc05g056070.2.1"
-    ]
+    Solyc01g096580.2.1   2924,
+    Solyc01g096590.2.1   2845,
+    Solyc05g056050.2.1   5302,
+    Solyc05g056060.2.1   9284,
+    Solyc05g056070.2.1   10540
 }
 {
-    Solyc01g096580.2.1   1,
-    Solyc01g096590.2.1   1,
-    Solyc05g056050.2.1   2,
-    Solyc05g056060.2.1   2,
-    Solyc05g056070.2.1   3
+    Solyc01g096580.2.1   768,
+    Solyc01g096590.2.1   639,
+    Solyc05g056050.2.1   1030,
+    Solyc05g056060.2.1   2473,
+    Solyc05g056070.2.1   1112
 }
+{
+    Solyc01g096580.2.1|Solyc01g096590.2.1                      2215,
+    Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1   3422,
+    Solyc05g056050.2.1|Solyc05g056070.2.1                      71,
+    Solyc05g056060.2.1|Solyc05g056070.2.1                      5718
+}
+{
+    Solyc01g096580.2.1   709,
+    Solyc01g096590.2.1   630,
+    Solyc05g056050.2.1   1809,
+    Solyc05g056060.2.1   144,
+    Solyc05g056070.2.1   1329
+}
+total reads: 5493452
+relevant reads: 16047
 
-012345678910202122232425
-
-012345678910202122232425
-
-012345678910202122232425505152535455
-
-012345678910202122232425505152535455
-[Finished in 0.2s]
+300..350
+300..355
+300..355,450..600
+207
+[Finished in 58.6s]
