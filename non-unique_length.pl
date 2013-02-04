@@ -10,7 +10,7 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
-use List::Util 'min';
+use List::Util qw(min sum);
 use Data::Printer;
 
 # Number::Range prints unnecessary warnings; therefore, turn them off
@@ -75,13 +75,17 @@ while (<$sam_fh>){
     }
     $count++;
 
+
+    push my @positions, first_pos($_);
+    say "POS: @positions";
+
     # just for monitoring/testing
-    # if ($count == 5) {
-    #     p %counts;
-    #     say "best for $count: @best_hits";
-    #     say "total: $total_count";
-    #     exit;
-    # }
+    if ($count == 20) {
+        p %counts;
+        say "best for $count: @best_hits";
+        say "total: $total_count";
+        exit;
+    }
 
 }
 say "total reads: $total_count";
@@ -112,6 +116,21 @@ sub best_hits {
       sort @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
 }
 
+sub first_pos {
+    my $read = shift;
+    my ( $start, $cigar ) = ( split /\t/, $read )[ 3, 5 ];
+    my $matches    = sum( $cigar =~ m|(\d+)M|g );
+    my $insertions = sum( $cigar =~ m|(\d+)I|g ) || 0;
+    my $deletions  = sum( $cigar =~ m|(\d+)D|g ) || 0;
+
+    my $length = $matches + $deletions - $insertions;
+    my $end    = $start + $length;
+    say "M: $matches";
+    say "I: $insertions" if $insertions;
+    say "D: $deletions"  if $deletions;
+
+    return ( "$start..$end" );
+}
 
 
 
