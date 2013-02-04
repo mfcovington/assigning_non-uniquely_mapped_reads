@@ -76,6 +76,10 @@ while (<$sam_fh>){
         $gene_lengths{$1} = $2;
         next;
     }
+    die "Something may be wrong with the sam file header..."
+      unless
+      join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
+
 
     my @best_hits = best_hits($_);
 
