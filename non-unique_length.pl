@@ -147,7 +147,7 @@ while (<$sam_fh>){
     }
 
     # # just for monitoring/testing
-    # if ($relevant_count >= 500) {
+    # if ($relevant_count >= 50) {
     #     # p %counts;
     #     say "best for $relevant_count: $subcluster";
     #     say "total: $total_count";
@@ -167,17 +167,48 @@ p %subcluster_counts;
 # p %ranges;
 p %uniq_counts;
 
+my %uniq_lengths = %gene_lengths;
+# build gene_multi_lengths hash
+my %gene_multi_lengths;
+for my $cluster_id (keys %clusters) {
+    for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+        $gene_multi_lengths{$_} = Number::Range->new() for split /\|/, $subcluster;
+    }
+}
+# p %gene_multi_lengths;
+
 for my $subcluster ( sort keys %subcluster_counts) {
     say "$subcluster: $subcluster_counts{$subcluster} reads";
 
-    for ( sort keys $ranges{$subcluster} ) {
+    for my $gene ( sort keys $ranges{$subcluster} ) {
+        $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range);
         my $multi_length;
-        $multi_length++ for $ranges{$subcluster}{$_}->range;
-        my $unique_length = $gene_lengths{$_} - $multi_length;
-        die "Unique length is less than zero... $_ $subcluster" if $unique_length < 0;
-        say "$_: $multi_length / $unique_length (multi vs unique length)";
+        $multi_length++ for $ranges{$subcluster}{$gene}->range;
+        # $uniq_lengths{$gene}-- for $ranges{$subcluster}{$gene}->range;
+        my $unique_length = $gene_lengths{$gene} - $multi_length;
+        die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
+        say "$gene: $multi_length / $unique_length (multi vs unique length)";
     }
 }
+
+for my $gene ( sort keys %gene_multi_lengths ) {
+    $uniq_lengths{$gene}-- for $gene_multi_lengths{$gene}->range;
+}
+
+# for my $subcluster ( sort keys %subcluster_counts) {
+#     say "$subcluster: $subcluster_counts{$subcluster} reads";
+
+#     for my $gene ( sort keys $ranges{$subcluster} ) {
+#         $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range);
+#         # $uniq_lengths{$gene}-- for $ranges{$subcluster}{$gene}->range;
+#         # my $unique_length = $gene_lengths{$gene} - $multi_length;
+#         # die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
+#         # say "$gene: $multi_length / $unique_length (multi vs unique length)";
+#     }
+# }
+
+# p %gene_multi_lengths;
+p %uniq_lengths;
 
 my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
 say $format;
@@ -274,6 +305,13 @@ __END__
     Solyc05g056060.2.1   144,
     Solyc05g056070.2.1   1329
 }
+{
+    Solyc01g096580.2.1   356,
+    Solyc01g096590.2.1   227,
+    Solyc05g056050.2.1   495,
+    Solyc05g056060.2.1   1583,
+    Solyc05g056070.2.1   227
+}
 total reads: 5493452
 relevant reads: 11426
 Solyc01g096580.2.1|Solyc01g096590.2.1: 2215 reads
@@ -290,4 +328,4 @@ Solyc05g056060.2.1|Solyc05g056070.2.1: 5718 reads
 Solyc05g056060.2.1: 833 / 1640 (multi vs unique length)
 Solyc05g056070.2.1: 830 / 282 (multi vs unique length)
 6..346,364..641,680..890
-[Finished in 56.9s]
+[Finished in 60.9s]
