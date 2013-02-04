@@ -64,10 +64,19 @@ my $gene_regex = join "|", map { quotemeta } keys %gene_set;
 my %counts;
 my $count;
 my $total_count;
+my %gene_lengths;
 while (<$sam_fh>){
-    next if /^@/;
     $total_count++;
     next unless /$gene_regex/;
+
+    # collect gene lengths
+    if (/^\@/) {
+        next unless /^\@SQ/;
+        m/SN:(.+)\tLN:(\d+)$/;
+        $gene_lengths{$1} = $2;
+        next;
+    }
+
     my @best_hits = best_hits($_);
 
     for my $gene ( keys %gene_set ){
@@ -84,6 +93,7 @@ while (<$sam_fh>){
         p %counts;
         say "best for $count: @best_hits";
         say "total: $total_count";
+        p %gene_lengths;
         exit;
     }
 
@@ -176,17 +186,60 @@ __END__
     Solyc05g056070.2.1   3
 }
 {
-    Solyc01g096580.2.1   3323,
-    Solyc01g096590.2.1   3245,
-    Solyc05g056050.2.1   7589,
-    Solyc05g056060.2.1   9854,
-    Solyc05g056070.2.1   11071
+    Solyc01g096580.2.1   1,
+    Solyc01g096590.2.1   1,
+    Solyc05g056050.2.1   13,
+    Solyc05g056060.2.1   16,
+    Solyc05g056070.2.1   17
 }
-total reads: 5458725
-relevant reads: 16047
-
-300..350
-300..355
-300..355,450..600
-207
-[Finished in 5.1s]
+{
+    Solyc01g096580.2.1   768,
+    Solyc01g096590.2.1   639,
+    Solyc05g056050.2.1   1030,
+    Solyc05g056060.2.1   2473,
+    Solyc05g056070.2.1   1112
+}
+M: 44
+POS: 803..847
+M: 44
+POS: 2382..2426
+M: 44
+POS: 1767..1811
+M: 44
+POS: 388..432
+M: 44
+POS: 622..666
+M: 44
+POS: 291..335
+M: 44
+POS: 2379..2423
+M: 44
+POS: 2129..2173
+M: 44
+POS: 221..265
+M: 44
+POS: 843..887
+M: 44
+POS: 2192..2236
+M: 44
+POS: 849..893
+M: 44
+POS: 511..555
+M: 44
+POS: 787..831
+M: 44
+POS: 480..524
+M: 44
+POS: 2235..2279
+M: 44
+POS: 561..605
+M: 44
+POS: 1790..1834
+M: 42
+I: 1
+POS: 34..75
+M: 44
+POS: 2333..2377
+best for 20: Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1
+total: 40167
+[Finished in 0.2s]
