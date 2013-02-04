@@ -91,7 +91,7 @@ while (<$sam_fh>){
 
     push my @positions, first_pos($_);
     say "POS: @positions";
-    other_pos($_) if $best_count > 1;
+    other_pos( $_, $best_count ) if $best_count > 1;
 
     # just for monitoring/testing
     if ($count == 20) {
@@ -136,27 +136,38 @@ sub best_hits {
 sub first_pos {
     my $read = shift;
     my ( $start, $cigar ) = ( split /\t/, $read )[ 3, 5 ];
+    my $end = calc_end( $start, $cigar );
+
+    return ( "$start..$end" );
+}
+
+sub calc_end {
+    my ( $start, $cigar ) = @_;
+
     my $matches    = sum( $cigar =~ m|(\d+)M|g );
     my $insertions = sum( $cigar =~ m|(\d+)I|g ) || 0;
     my $deletions  = sum( $cigar =~ m|(\d+)D|g ) || 0;
 
     my $length = $matches + $deletions - $insertions;
     my $end    = $start + $length;
-    say "M: $matches";
-    say "I: $insertions" if $insertions;
-    say "D: $deletions"  if $deletions;
 
-    return ( "$start..$end" );
+    return $end;
 }
 
 
 sub other_pos {
-    my $read = shift;
+    my ( $read, $best_count ) = @_;
     my ($others) = $read =~ m|XA:Z:([^\s]+)|;
     say "other: $others";
 
+    my $best_seen_count = 1;
     for ( split /;/, $others) {
+        $best_seen_count++;
         say $_;
+        my ( $start, $cigar ) = m|^[^,]+,[+-](\d+),([^,]+),\d+$|;
+        say $start;
+        say $cigar;
+        last if $best_seen_count == $best_count;
     }
 
 
