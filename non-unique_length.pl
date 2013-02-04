@@ -54,6 +54,15 @@ for my $cluster_id (keys %clusters) {
 }
 # p %gene_set;
 
+# build unique counts hash
+my %uniq_counts;
+for my $cluster_id (keys %clusters) {
+    for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+        $uniq_counts{$_} = 0 for split /\|/, $subcluster;
+    }
+}
+# p %uniq_counts;
+
 # build ranges data structure (HoHoO)
 my %ranges;
 for my $cluster_id ( keys %clusters ) {
