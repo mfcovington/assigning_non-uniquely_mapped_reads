@@ -54,12 +54,12 @@ for my $cluster_id (keys %clusters) {
 }
 p %gene_set;
 
-# build ranges data structure (HoAoH)
+# build ranges data structure (HoHoO)
 my %ranges;
 for my $cluster_id ( keys %clusters ) {
     for my $subcluster ( @{ $clusters{$cluster_id} } ) {
         $ranges{$subcluster} = ();
-        push @{ $ranges{$subcluster} }, { $_ => Number::Range->new("0..10") }
+        $ranges{$subcluster}{$_} = Number::Range->new()
           for split /\|/, $subcluster;
     }
 }
