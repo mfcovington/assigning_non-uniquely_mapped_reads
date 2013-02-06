@@ -137,8 +137,10 @@ while (<$sam_fh>){
     @positions = @positions[@sorted_index];
 
     # record counts for unique hits, subclusters hits, and relevant reads
+    # also populate %unique_ranges
     if ( $best_count == 1 ) {
         $uniq_counts{ $best_hits[0] }++;
+        $unique_ranges{ $best_hits[0] }->addrange( $positions[0] );
         next;
     }
     $subcluster_counts{$subcluster}++;
