@@ -174,7 +174,6 @@ p %subcluster_counts;
 # p %ranges;
 p %uniq_counts;
 
-my %uniq_lengths = %gene_lengths;
 # build gene_multi_lengths hash
 my %gene_multi_lengths;
 for my $cluster_id (keys %clusters) {
@@ -184,6 +183,7 @@ for my $cluster_id (keys %clusters) {
 }
 # p %gene_multi_lengths;
 
+# populate gene_multi_lengths hash
 for my $subcluster ( sort keys %subcluster_counts) {
     say "$subcluster: $subcluster_counts{$subcluster} reads";
 
@@ -191,30 +191,18 @@ for my $subcluster ( sort keys %subcluster_counts) {
         $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range);
         my $multi_length;
         $multi_length++ for $ranges{$subcluster}{$gene}->range;
-        # $uniq_lengths{$gene}-- for $ranges{$subcluster}{$gene}->range;
         my $unique_length = $gene_lengths{$gene} - $multi_length;
         die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
         say "$gene: $multi_length / $unique_length (multi vs unique length)";
     }
 }
+# p %gene_multi_lengths;
 
+# build unique_lengths hash
+my %uniq_lengths = %gene_lengths;
 for my $gene ( sort keys %gene_multi_lengths ) {
     $uniq_lengths{$gene}-- for $gene_multi_lengths{$gene}->range;
 }
-
-# for my $subcluster ( sort keys %subcluster_counts) {
-#     say "$subcluster: $subcluster_counts{$subcluster} reads";
-
-#     for my $gene ( sort keys $ranges{$subcluster} ) {
-#         $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range);
-#         # $uniq_lengths{$gene}-- for $ranges{$subcluster}{$gene}->range;
-#         # my $unique_length = $gene_lengths{$gene} - $multi_length;
-#         # die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
-#         # say "$gene: $multi_length / $unique_length (multi vs unique length)";
-#     }
-# }
-
-# p %gene_multi_lengths;
 p %uniq_lengths;
 
 my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
