@@ -81,6 +81,11 @@ for my $cluster_id ( keys %clusters ) {
 }
 # p %ranges;
 
+# build unique_ranges hash
+my %unique_ranges;
+$unique_ranges{$_} = Number::Range->new() for keys %gene_set;
+# p %unique_ranges;
+
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
 my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
