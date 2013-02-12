@@ -213,6 +213,11 @@ for my $gene ( keys %gene_set ) {
 # p %unique_lengths;
 # p %gene_lengths;
 
+for ( sort keys %gene_set ) {
+    say "$_: $unique_counts{$_} (unique reads)";
+    say "$_: $unique_lengths{$_} (unique length)";
+}
+
 my @lengths;
 push @lengths, $gene_lengths{$_} for keys %gene_lengths;
 my $max_length = max @lengths;
@@ -275,20 +280,6 @@ sub calc_end {
 }
 
 __END__
-{
-    Solyc01g096580.2.1   496,
-    Solyc01g096590.2.1   421,
-    Solyc05g056050.2.1   924,
-    Solyc05g056060.2.1   1111,
-    Solyc05g056070.2.1   431
-}
-{
-    Solyc01g096580.2.1   768,
-    Solyc01g096590.2.1   639,
-    Solyc05g056050.2.1   1030,
-    Solyc05g056060.2.1   2473,
-    Solyc05g056070.2.1   1112
-}
 Solyc01g096580.2.1|Solyc01g096590.2.1: 2215 reads
 Solyc01g096580.2.1: 409 (non-unique length)
 Solyc01g096590.2.1: 409 (non-unique length)
@@ -302,14 +293,14 @@ Solyc05g056070.2.1: 45 (non-unique length)
 Solyc05g056060.2.1|Solyc05g056070.2.1: 5718 reads
 Solyc05g056060.2.1: 827 (non-unique length)
 Solyc05g056070.2.1: 825 (non-unique length)
-Solyc05g056050.2.1 U1-ranges: 14..501,504..679,719..801,807..983
-Solyc05g056060.2.1 U1-ranges: 17..615,646..689,1266..1309,1354..1428,1611..1794,1820..1984
-Solyc01g096580.2.1 U1-ranges: 28..101,127..248,429..728
-Solyc01g096590.2.1 U1-ranges: 17..96,121..242,423..641
-Solyc05g056070.2.1 U1-ranges: 218..302,323..406,847..1108
-Solyc05g056050.2.1 MM-ranges: 342..404,409..458,460..761,763..849,852..879
-Solyc05g056060.2.1 MM-ranges: 1391..1646,1757..1861,1948..2473
-Solyc01g096580.2.1 MM-ranges: 60..169,206..471,475..507
-Solyc01g096590.2.1 MM-ranges: 54..163,200..465,469..501
-Solyc05g056070.2.1 MM-ranges: 6..889
-[Finished in 63.2s]
+Solyc01g096580.2.1: 709 (unique reads)
+Solyc01g096580.2.1: 496 (unique length)
+Solyc01g096590.2.1: 630 (unique reads)
+Solyc01g096590.2.1: 421 (unique length)
+Solyc05g056050.2.1: 1809 (unique reads)
+Solyc05g056050.2.1: 924 (unique length)
+Solyc05g056060.2.1: 144 (unique reads)
+Solyc05g056060.2.1: 1111 (unique length)
+Solyc05g056070.2.1: 1329 (unique reads)
+Solyc05g056070.2.1: 431 (unique length)
+[Finished in 66.4s]
