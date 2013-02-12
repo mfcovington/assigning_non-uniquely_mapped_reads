@@ -255,7 +255,7 @@ sub calc_end {
     my $deletions  = sum( $cigar =~ m|(\d+)D|g ) || 0;
 
     my $length = $matches + $deletions - $insertions;
-    my $end    = $start + $length;
+    my $end    = $start + $length - 1;
 
     return $end;
 }
