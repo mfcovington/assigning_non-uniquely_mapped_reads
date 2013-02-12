@@ -10,7 +10,7 @@ use warnings;
 use autodie;
 use feature 'say';
 use Number::Range;
-use List::Util qw(min sum);
+use List::Util qw(min max sum);
 use Data::Printer;
 
 # Number::Range prints unnecessary warnings; therefore, turn them off
@@ -254,6 +254,15 @@ for my $gene ( keys %gene_multi_lengths ) {
 # }
 # p %uniq_lengths;
 p %gene_lengths;
+
+my @lengths;
+push @lengths, $gene_lengths{$_} for keys %gene_lengths;
+my $max_length = max @lengths;
+say <<WARNING if $max_length > $max_hash_size;
+The maximum gene length ($max_length) is greater than
+the maximum hash size ($max_hash_size).
+You should probably increase \$max_hash_size, just in case.
+WARNING
 
 # my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
 # say $format;
