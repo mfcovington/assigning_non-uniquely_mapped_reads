@@ -109,9 +109,6 @@ while (<$sam_fh>) {
         $gene_lengths{$1} = $2;
         next;
     }
-    die "Something may be wrong with the sam file header..."
-      unless
-      join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
     my ( $subcluster, $best_count, @best_hits ) = best_hits($_);
 
@@ -168,6 +165,10 @@ while (<$sam_fh>) {
 # p %subcluster_counts;
 # p %ranges;
 # p %unique_counts;
+
+die "Something may be wrong with the sam file header..."
+  unless
+  join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
 # build gene_multi_lengths hash
 my %gene_multi_lengths;
