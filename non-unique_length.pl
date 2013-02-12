@@ -17,6 +17,10 @@ use Data::Printer;
 no warnings 'Number::Range';
 local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|};
 
+# Number::Range stores large ranges in a way that causes problems
+# when calculating total lengths, unless max_hash_size is high enough.
+my $max_hash_size = 10_000;
+
 # For intial design and testing, will use:
 # CLUSTER 281:
 # Solyc01g096580.2.1      2215
@@ -75,18 +79,20 @@ my %ranges;
 for my $cluster_id ( keys %clusters ) {
     for my $subcluster ( @{ $clusters{$cluster_id} } ) {
         $ranges{$subcluster} = ();
-        $ranges{$subcluster}{$_} = Number::Range->new()
-          for split /\|/, $subcluster;
-        # $ranges{$subcluster}{$_}->set_max_hash_size(3000)
-        #   for split /\|/, $subcluster;
+        for (split /\|/, $subcluster) {
+            $ranges{$subcluster}{$_} = Number::Range->new();
+            $ranges{$subcluster}{$_}->set_max_hash_size($max_hash_size);
+        }
     }
 }
 # p %ranges;
 
 # build unique_ranges hash
 my %unique_ranges;
-$unique_ranges{$_} = Number::Range->new() for keys %gene_set;
-# $unique_ranges{$_}->set_max_hash_size(3000) for keys %gene_set;
+for (keys %gene_set) {
+    $unique_ranges{$_} = Number::Range->new();
+    $unique_ranges{$_}->set_max_hash_size($max_hash_size);
+}
 # p %unique_ranges;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
@@ -181,8 +187,10 @@ while (<$sam_fh>){
 my %gene_multi_lengths;
 for my $cluster_id (keys %clusters) {
     for my $subcluster ( @{ $clusters{$cluster_id} } ) {
-        $gene_multi_lengths{$_} = Number::Range->new() for split /\|/, $subcluster;
-        # $gene_multi_lengths{$_}->set_max_hash_size(3000) for split /\|/, $subcluster;
+        for ( split /\|/, $subcluster ) {
+            $gene_multi_lengths{$_} = Number::Range->new();
+            $gene_multi_lengths{$_}->set_max_hash_size($max_hash_size);
+        }
     }
 }
 # p %gene_multi_lengths;
@@ -352,4 +360,4 @@ Solyc05g056060.2.1 MM-ranges: 1391..1646,1757..1861,1948..2473
 Solyc01g096580.2.1 MM-ranges: 60..169,206..471,475..507
 Solyc01g096590.2.1 MM-ranges: 54..163,200..465,469..501
 Solyc05g056070.2.1 MM-ranges: 6..889
-[Finished in 64.4s]
+[Finished in 63.2s]
