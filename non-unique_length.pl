@@ -77,6 +77,8 @@ for my $cluster_id ( keys %clusters ) {
         $ranges{$subcluster} = ();
         $ranges{$subcluster}{$_} = Number::Range->new()
           for split /\|/, $subcluster;
+        # $ranges{$subcluster}{$_}->set_max_hash_size(3000)
+        #   for split /\|/, $subcluster;
     }
 }
 # p %ranges;
@@ -84,6 +86,7 @@ for my $cluster_id ( keys %clusters ) {
 # build unique_ranges hash
 my %unique_ranges;
 $unique_ranges{$_} = Number::Range->new() for keys %gene_set;
+# $unique_ranges{$_}->set_max_hash_size(3000) for keys %gene_set;
 # p %unique_ranges;
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment uniq_count cluster, if applicable, else deal with multi_read
@@ -166,19 +169,20 @@ while (<$sam_fh>){
     # }
 
 }
-say "total reads: $total_count";
-say "relevant reads: $relevant_count";
-p %counts;
-p %gene_lengths;
-p %subcluster_counts;
+# say "total reads: $total_count";
+# say "relevant reads: $relevant_count";
+# p %counts;
+# p %gene_lengths;
+# p %subcluster_counts;
 # p %ranges;
-p %uniq_counts;
+# p %uniq_counts;
 
 # build gene_multi_lengths hash
 my %gene_multi_lengths;
 for my $cluster_id (keys %clusters) {
     for my $subcluster ( @{ $clusters{$cluster_id} } ) {
         $gene_multi_lengths{$_} = Number::Range->new() for split /\|/, $subcluster;
+        # $gene_multi_lengths{$_}->set_max_hash_size(3000) for split /\|/, $subcluster;
     }
 }
 # p %gene_multi_lengths;
@@ -191,22 +195,60 @@ for my $subcluster ( sort keys %subcluster_counts) {
         $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range);
         my $multi_length;
         $multi_length++ for $ranges{$subcluster}{$gene}->range;
-        my $unique_length = $gene_lengths{$gene} - $multi_length;
-        die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
-        say "$gene: $multi_length / $unique_length (multi vs unique length)";
+        # my $unique_length = $gene_lengths{$gene} - $multi_length;
+        # die "Unique length is less than zero... $gene $subcluster" if $unique_length < 0;
+        # say "$gene: $multi_length / $unique_length (multi vs unique length)";
+        say "$gene: $multi_length (non-unique length)";
     }
 }
 # p %gene_multi_lengths;
 
-# build unique_lengths hash
-my %uniq_lengths = %gene_lengths;
-for my $gene ( sort keys %gene_multi_lengths ) {
-    $uniq_lengths{$gene}-- for $gene_multi_lengths{$gene}->range;
+# THIS IS THE CORRECT WAY!!
+# build/populate unique_lengths hash
+my %unique_lengths;
+for my $gene ( keys %gene_set ) {
+    $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
+    my $format = $unique_ranges{$gene}->range;
+    say "$gene U1-ranges: $format";
 }
-p %uniq_lengths;
+# p %unique_ranges;
+p %unique_lengths;
 
-my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
-say $format;
+for my $gene ( keys %gene_multi_lengths ) {
+    my $format = $gene_multi_lengths{$gene}->range;
+    say "$gene MM-ranges: $format";
+}
+
+# NOT THE RIGHT WAY
+# my %unique_ranges2;
+# $unique_ranges2{$_} = Number::Range->new() for keys %gene_set;
+# $unique_ranges2{$_}->set_max_hash_size(3000) for keys %gene_set;
+# for my $gene ( keys %gene_lengths ) {
+#     my $length = $gene_lengths{$gene};
+#     $unique_ranges2{$gene}->addrange("1..$length");
+# }
+# for my $gene ( sort keys %gene_multi_lengths ) {
+#     my $format1 = $gene_multi_lengths{$gene}->range;
+#     say "$gene NN-ranges: $format1";
+#     $unique_ranges2{$gene}->delrange($gene_multi_lengths{$gene}->range);
+#     my $format = $unique_ranges2{$gene}->range;
+#     say "$gene U2-ranges: $format";
+# }
+# # p %unique_ranges2;
+
+# NOT THE RIGHT WAY
+# # build unique_lengths hash
+# my %uniq_lengths = %gene_lengths;
+# for my $gene ( sort keys %gene_multi_lengths ) {
+#     $uniq_lengths{$gene}-- for $gene_multi_lengths{$gene}->range;
+#     # my $format = $gene_multi_lengths{$gene}->range;
+#     # say "$gene U2-ranges: $format";
+# }
+# p %uniq_lengths;
+p %gene_lengths;
+
+# my $format = $ranges{'Solyc05g056060.2.1|Solyc05g056070.2.1'}{'Solyc05g056070.2.1'}->range;
+# say $format;
 
 sub best_hits {
     # adapted from harvest_gene_ids.pl
@@ -274,11 +316,11 @@ sub calc_end {
 
 __END__
 {
-    Solyc01g096580.2.1   2924,
-    Solyc01g096590.2.1   2845,
-    Solyc05g056050.2.1   5302,
-    Solyc05g056060.2.1   9284,
-    Solyc05g056070.2.1   10540
+    Solyc01g096580.2.1   496,
+    Solyc01g096590.2.1   421,
+    Solyc05g056050.2.1   924,
+    Solyc05g056060.2.1   1111,
+    Solyc05g056070.2.1   431
 }
 {
     Solyc01g096580.2.1   768,
@@ -287,40 +329,27 @@ __END__
     Solyc05g056060.2.1   2473,
     Solyc05g056070.2.1   1112
 }
-{
-    Solyc01g096580.2.1|Solyc01g096590.2.1                      2215,
-    Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1   3422,
-    Solyc05g056050.2.1|Solyc05g056070.2.1                      71,
-    Solyc05g056060.2.1|Solyc05g056070.2.1                      5718
-}
-{
-    Solyc01g096580.2.1   709,
-    Solyc01g096590.2.1   630,
-    Solyc05g056050.2.1   1809,
-    Solyc05g056060.2.1   144,
-    Solyc05g056070.2.1   1329
-}
-{
-    Solyc01g096580.2.1   356,
-    Solyc01g096590.2.1   227,
-    Solyc05g056050.2.1   495,
-    Solyc05g056060.2.1   1583,
-    Solyc05g056070.2.1   227
-}
-total reads: 5493452
-relevant reads: 11426
 Solyc01g096580.2.1|Solyc01g096590.2.1: 2215 reads
-Solyc01g096580.2.1: 412 / 356 (multi vs unique length)
-Solyc01g096590.2.1: 412 / 227 (multi vs unique length)
+Solyc01g096580.2.1: 409 (non-unique length)
+Solyc01g096590.2.1: 409 (non-unique length)
 Solyc05g056050.2.1|Solyc05g056060.2.1|Solyc05g056070.2.1: 3422 reads
-Solyc05g056050.2.1: 534 / 496 (multi vs unique length)
-Solyc05g056060.2.1: 534 / 1939 (multi vs unique length)
-Solyc05g056070.2.1: 534 / 578 (multi vs unique length)
+Solyc05g056050.2.1: 529 (non-unique length)
+Solyc05g056060.2.1: 529 (non-unique length)
+Solyc05g056070.2.1: 529 (non-unique length)
 Solyc05g056050.2.1|Solyc05g056070.2.1: 71 reads
-Solyc05g056050.2.1: 46 / 984 (multi vs unique length)
-Solyc05g056070.2.1: 46 / 1066 (multi vs unique length)
+Solyc05g056050.2.1: 45 (non-unique length)
+Solyc05g056070.2.1: 45 (non-unique length)
 Solyc05g056060.2.1|Solyc05g056070.2.1: 5718 reads
-Solyc05g056060.2.1: 833 / 1640 (multi vs unique length)
-Solyc05g056070.2.1: 830 / 282 (multi vs unique length)
-6..346,364..641,680..890
-[Finished in 60.9s]
+Solyc05g056060.2.1: 827 (non-unique length)
+Solyc05g056070.2.1: 825 (non-unique length)
+Solyc05g056050.2.1 U1-ranges: 14..501,504..679,719..801,807..983
+Solyc05g056060.2.1 U1-ranges: 17..615,646..689,1266..1309,1354..1428,1611..1794,1820..1984
+Solyc01g096580.2.1 U1-ranges: 28..101,127..248,429..728
+Solyc01g096590.2.1 U1-ranges: 17..96,121..242,423..641
+Solyc05g056070.2.1 U1-ranges: 218..302,323..406,847..1108
+Solyc05g056050.2.1 MM-ranges: 342..404,409..458,460..761,763..849,852..879
+Solyc05g056060.2.1 MM-ranges: 1391..1646,1757..1861,1948..2473
+Solyc01g096580.2.1 MM-ranges: 60..169,206..471,475..507
+Solyc01g096590.2.1 MM-ranges: 54..163,200..465,469..501
+Solyc05g056070.2.1 MM-ranges: 6..889
+[Finished in 64.4s]
