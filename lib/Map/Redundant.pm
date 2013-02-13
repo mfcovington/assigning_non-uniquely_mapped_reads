@@ -17,7 +17,7 @@ use File::Path 'make_path';
 
 
 
-our @EXPORT_OK = qw(clusters coverage harvest parse subcluster_summary);
+our @EXPORT_OK = qw(clusters coverage identify_subclusters parse summarize_subclusters);
 
 
 has 'max_best' => (
@@ -97,7 +97,7 @@ sub _make_dir {
     make_path( $dir_name ) unless -e $dir_name;
 }
 
-sub harvest {
+sub identify_subclusters {
     my $self = shift;
 
     my $sam_filename  = $self->sam_file;
@@ -169,7 +169,7 @@ sub harvest {
 
 }
 
-sub subcluster_summary {
+sub summarize_subclusters {
     my $self = shift;
 
     my %subclusters = %{ $self->subclusters_hash };

@@ -52,8 +52,8 @@ my $assign = new Map::Redundant(
     'count_summary' => 1
 );
 
-$assign->harvest;
-$assign->subcluster_summary;
+$assign->identify_subclusters;
+$assign->summarize_subclusters;
 # $assign->clusters_hash(\%clusters);
 # $assign->coverage();
 
