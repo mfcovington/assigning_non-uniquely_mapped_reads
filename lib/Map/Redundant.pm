@@ -253,7 +253,7 @@ sub build_clusters {
 
     my %clustered_subclusters;
     for my $cluster_id ( keys %clustered_genes ) {
-        my $regex = join "|", @{ $clustered_genes{$cluster_id} };
+        my $regex = join "|", map { quotemeta } @{ $clustered_genes{$cluster_id} };
         $clustered_subclusters{$cluster_id} = [];
         for ( sort keys %subclusters ) {
             push $clustered_subclusters{$cluster_id}, $_ if /$regex/;
