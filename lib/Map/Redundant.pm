@@ -14,8 +14,12 @@ use List::Util qw(min max sum);
 use File::Basename;
 use File::Path 'make_path';
 use Exporter qw(import);
+use IO::Handle;
 
 our @EXPORT_OK = qw(build_clusters calculate_coverage identify_subclusters summarize_subclusters);
+
+STDERR->autoflush(1);
+STDOUT->autoflush(1);
 
 has 'max_best' => (
     is  => 'rw',
@@ -73,6 +77,13 @@ has 'size_summary' => (
     lazy => 1,
 );
 
+has 'verbose' => (
+    is  => 'rw',
+    isa => 'Bool',
+    default => 0,
+    lazy => 1,
+);
+
 has 'sam_file' => (
     is  => 'rw',
     isa => 'Str',
@@ -114,9 +125,12 @@ sub identify_subclusters {
     my $sam_filename  = $self->sam_file;
     my $count_summary = $self->count_summary;
     my $gene_summary  = $self->gene_summary;
+    my $verbose       = $self->verbose;
     my $max_best      = $self->max_best;
     my $out_dir       = $self->out_dir;
     my $delimiter     = $self->delimiter;
+
+    say "Identifying Subclusters" if $verbose;
 
     $self->_make_dir($out_dir);
 
@@ -181,7 +195,10 @@ sub identify_subclusters {
 sub summarize_subclusters {
     my $self = shift;
 
+    my $verbose     = $self->verbose;
     my %subclusters = %{ $self->subclusters_hash };
+
+    say "Summarizing Subclusters" if $verbose;
 
     my $out_dir = $self->out_dir;
     $self->_make_dir($out_dir);
@@ -202,6 +219,10 @@ sub build_clusters {
     my $cluster_summary = $self->cluster_summary;
     my $size_summary = $self->size_summary;
     my $out_dir = $self->out_dir;
+    my $verbose = $self->verbose;
+
+    say "Building Clusters" if $verbose;
+
     $self->_make_dir($out_dir);
 
     my %clustered_genes;
@@ -271,6 +292,9 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
     my %clusters = %{ $self->clusters_hash };
     my $max_best = $self->max_best;
     my $delimiter = $self->delimiter;
+    my $verbose = $self->verbose;
+
+    say "Calculating Coverage" if $verbose;
 
     # Number::Range prints unnecessary warnings; therefore, turn them off
     no warnings 'Number::Range';
@@ -325,6 +349,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     while (<$sam_fh>) {
         $total_count++;
+        say "Processing read # $total_count" if $verbose && $total_count % 250_000 == 0;
         next unless /$gene_regex/;
 
         # collect gene lengths
