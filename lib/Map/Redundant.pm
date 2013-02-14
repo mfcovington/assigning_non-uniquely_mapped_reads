@@ -399,6 +399,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
     # build/populate unique_lengths hash
     my %unique_lengths;
     for my $gene ( keys %gene_set ) {
+        $unique_lengths{$gene} = 0;
         $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
     }
 
