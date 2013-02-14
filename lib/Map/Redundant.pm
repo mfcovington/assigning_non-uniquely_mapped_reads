@@ -338,6 +338,9 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
         my ( $subcluster, $best_count, @best_hits ) =
           best_hits( $_, $max_best, $delimiter );
 
+        # bypass instances where genes of interest are only suboptimal hits
+        next unless join ("-", @best_hits) =~ /$gene_regex/;
+
         for my $gene (@best_hits) {
             $counts{$gene}++ if /\Q$gene\E/;
         }
