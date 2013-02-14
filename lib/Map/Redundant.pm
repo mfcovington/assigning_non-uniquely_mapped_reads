@@ -363,7 +363,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
         # populate range data structure
         my $index = 0;
-        for ( sort keys $ranges{$subcluster} ) {
+        for ( sort keys %{ $ranges{$subcluster} }) {
             $ranges{$subcluster}{$_}->addrange( $positions[$index] );
             $index++;
         }
