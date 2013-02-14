@@ -20,7 +20,7 @@ our @EXPORT_OK = qw(build_clusters calculate_coverage identify_subclusters summa
 has 'max_best' => (
     is  => 'rw',
     isa => 'Num',
-    default => '100',
+    default => 100,
     lazy => 1,
 );
 
@@ -269,6 +269,8 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
     # my $sam_filename = $self->sam_dir . "/" . $self->sam_file;
     my $sam_filename = $self->sam_file;
     my %clusters = %{ $self->clusters_hash };
+    my $max_best = $self->max_best;
+    my $delimiter = $self->delimiter;
 
     # Number::Range prints unnecessary warnings; therefore, turn them off
     no warnings 'Number::Range';
@@ -333,7 +335,8 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
             next;
         }
 
-        my ( $subcluster, $best_count, @best_hits ) = best_hits($_);
+        my ( $subcluster, $best_count, @best_hits ) =
+          best_hits( $_, $max_best, $delimiter );
 
         for my $gene (@best_hits) {
             $counts{$gene}++ if /\Q$gene\E/;
@@ -419,13 +422,12 @@ WARNING
 }
 
 sub best_hits {
+    # my $self = shift;
     # adapted from harvest_gene_ids.pl
-    my $read = shift;
+    my ( $read, $max_best, $delimiter ) = @_;
     my ($best_hits) = $read =~ m|X0:i:(\d+)|;
     my @genes = $read =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
 
-    my $delimiter = "|";
-    my $max_best  = 7;
     my @bests = @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
     my $best_hits_string = join $delimiter, sort @bests;
     my $best_hits_count  = scalar @bests;
