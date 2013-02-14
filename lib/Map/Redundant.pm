@@ -11,14 +11,11 @@ use autodie;
 use feature 'say';
 use Number::Range;
 use List::Util qw(min max sum);
-use Exporter qw(import);
 use File::Basename;
 use File::Path 'make_path';
+use Exporter qw(import);
 
-
-
-our @EXPORT_OK = qw(clusters coverage identify_subclusters parse summarize_subclusters);
-
+our @EXPORT_OK = qw(build_clusters calculate_coverage identify_subclusters summarize_subclusters);
 
 has 'max_best' => (
     is  => 'rw',
@@ -56,6 +53,20 @@ has 'gene_summary' => (
 );
 
 has 'count_summary' => (
+    is  => 'rw',
+    isa => 'Bool',
+    default => 0,
+    lazy => 1,
+);
+
+has 'cluster_summary' => (
+    is  => 'rw',
+    isa => 'Bool',
+    default => 0,
+    lazy => 1,
+);
+
+has 'size_summary' => (
     is  => 'rw',
     isa => 'Bool',
     default => 0,
@@ -165,8 +176,6 @@ sub identify_subclusters {
 
         close $counts_fh;
     }
-
-
 }
 
 sub summarize_subclusters {
@@ -185,25 +194,81 @@ sub summarize_subclusters {
     close $subclusters_fh;
 }
 
+sub build_clusters {
+    my $self = shift;
 
-sub parse {
-    # body...
+    my %subclusters = %{ $self->subclusters_hash };
+    my $id = $self->id;
+    my $cluster_summary = $self->cluster_summary;
+    my $size_summary = $self->size_summary;
+    my $out_dir = $self->out_dir;
+    $self->_make_dir($out_dir);
+
+    my %clustered_genes;
+    my %cluster_sizes;
+    my $cluster_number;
+    open my $clusters_fh, ">", "$out_dir/$id.clusters" if $cluster_summary;
+    while (%subclusters) {
+        my ($group) = sort keys %subclusters;
+        my ($seed_gene) = split /\|/, $group;
+        my %checked;
+        my %current_cluster;
+        while ( defined $seed_gene ) {
+            for my $genes ( keys %subclusters ) {
+                next unless $genes =~ m|$seed_gene|;
+                my $counts = $subclusters{$genes};
+                delete $subclusters{$genes};
+                my %gene_list;
+                $gene_list{$_} = 1 for split /\|/, $genes;
+                next if scalar keys %gene_list == 1;
+                $current_cluster{$_} += $counts for keys %gene_list;
+            }
+            $checked{$seed_gene}++;
+            my @remainder = grep { not $checked{$_} } keys %current_cluster;
+            $seed_gene = shift @remainder;
+        }
+        if ( scalar keys %current_cluster > 1 ) {
+            $cluster_number++;
+            if ($cluster_summary) {
+                say $clusters_fh "CLUSTER $cluster_number:";
+                say $clusters_fh "$_\t$current_cluster{$_}"
+                  for sort keys %current_cluster;
+            }
+            $cluster_sizes{ scalar keys %current_cluster }++;
+            my @matched_subclusters =
+            $clustered_genes{$cluster_number} = [ sort keys %current_cluster ];
+        }
+    }
+    close $clusters_fh if $cluster_summary;
+
+    if ($size_summary) {
+        open my $sizes_fh, ">", "$out_dir/$id.sizes";
+        say $sizes_fh "Size\tNumber of clusters";
+        say $sizes_fh "$_\t$cluster_sizes{$_}"
+          for sort { $a <=> $b } keys %cluster_sizes;
+        close $sizes_fh;
+    }
+
+    %subclusters = %{ $self->subclusters_hash };
+
+    my %clustered_subclusters;
+    for my $cluster_id ( keys %clustered_genes ) {
+        my $regex = join "|", @{ $clustered_genes{$cluster_id} };
+        $clustered_subclusters{$cluster_id} = [];
+        for ( sort keys %subclusters ) {
+            push $clustered_subclusters{$cluster_id}, $_ if /$regex/;
+        }
+    }
+
+    $self->clusters_hash(\%clustered_subclusters);
 }
 
-sub clusters {
-    # body...
-}
-
-sub coverage {
-
-    # adapted from non-unique_length.pl
+sub calculate_coverage {    # adapted from non-unique_length.pl
 
     my $self = shift;
-    my $sam_filename = $self->sam_dir . "/" . $self->sam_file;
+    # my $sam_filename = $self->sam_dir . "/" . $self->sam_file;
+    my $sam_filename = $self->sam_file;
     my %clusters = %{ $self->clusters_hash };
-
-    # my $sam_filename = shift;
-    # my %clusters = @_;
 
     # Number::Range prints unnecessary warnings; therefore, turn them off
     no warnings 'Number::Range';
