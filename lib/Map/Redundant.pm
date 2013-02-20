@@ -13,10 +13,7 @@ use Number::Range;
 use List::Util qw(min max sum);
 use File::Basename;
 use File::Path 'make_path';
-use Exporter qw(import);
 use IO::Handle;
-
-our @EXPORT_OK = qw(build_clusters calculate_coverage identify_subclusters summarize_subclusters);
 
 STDERR->autoflush(1);
 STDOUT->autoflush(1);
