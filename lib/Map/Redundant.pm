@@ -77,6 +77,13 @@ has 'size_summary' => (
     lazy => 1,
 );
 
+has 'coverage_summary' => (
+    is  => 'rw',
+    isa => 'Bool',
+    default => 0,
+    lazy => 1,
+);
+
 has 'verbose' => (
     is  => 'rw',
     isa => 'Bool',
@@ -95,6 +102,11 @@ has 'clusters_hash' => (
 );
 
 has 'subclusters_hash' => (
+    is => 'rw',
+    isa => 'HashRef',
+);
+
+has 'clustered_genes_hash' => (
     is => 'rw',
     isa => 'HashRef',
 );
@@ -281,6 +293,7 @@ sub build_clusters {
         }
     }
 
+    $self->clustered_genes_hash(\%clustered_genes);
     $self->clusters_hash(\%clustered_subclusters);
 }
 
@@ -289,10 +302,15 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
     my $self = shift;
     # my $sam_filename = $self->sam_dir . "/" . $self->sam_file;
     my $sam_filename = $self->sam_file;
+    my %clustered_genes = %{ $self->clustered_genes_hash };
     my %clusters = %{ $self->clusters_hash };
     my $max_best = $self->max_best;
     my $delimiter = $self->delimiter;
     my $verbose = $self->verbose;
+    my $id = $self->id;
+    my $coverage_summary = $self->coverage_summary;
+    my $out_dir = $self->out_dir;
+    $self->_make_dir($out_dir);
 
     say "Calculating Coverage" if $verbose;
 
@@ -302,7 +320,10 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     # Number::Range stores large ranges in a way that causes problems
     # when calculating total lengths, unless max_hash_size is high enough.
-    my $max_hash_size = 10_000;
+    # Since there is a (mis-annotated!) gene of 219kb in my dataset:
+    my $max_hash_size = 220_000;
+    # my $max_hash_size = 10_000;
+    # my $max_hash_size = 52;   # 52 and lower cause problems
 
     my %gene_set;
     my %unique_counts;
@@ -404,41 +425,43 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
       unless
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
-    # build gene_multi_lengths hash
     my %gene_multi_lengths;
-    for my $cluster_id ( keys %clusters ) {
+    my %unique_lengths;
+    open my $coverage_fh, ">", "$out_dir/$id.coverage" if $coverage_summary;
+    for my $cluster_id ( sort {$a <=> $b} keys %clusters ) {
+        say $coverage_fh "CLUSTER: $cluster_id";
         for my $subcluster ( @{ $clusters{$cluster_id} } ) {
+
+            # build gene_multi_lengths hash
             for ( split /\|/, $subcluster ) {
                 $gene_multi_lengths{$_} = Number::Range->new();
                 $gene_multi_lengths{$_}->set_max_hash_size($max_hash_size);
             }
+
+            # populate gene_multi_lengths hash
+            say $coverage_fh "$subcluster: $subcluster_counts{$subcluster} reads";
+
+            for my $gene ( sort keys $ranges{$subcluster} ) {
+                $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range );
+                my $multi_length;
+                $multi_length++ for $ranges{$subcluster}{$gene}->range;
+                say $coverage_fh "$gene: $multi_length (non-unique length)";
+            }
         }
-    }
 
-    # populate gene_multi_lengths hash
-    for my $subcluster ( sort keys %subcluster_counts ) {
-        say "$subcluster: $subcluster_counts{$subcluster} reads";
-
-        for my $gene ( sort keys $ranges{$subcluster} ) {
-            $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range );
-            my $multi_length;
-            $multi_length++ for $ranges{$subcluster}{$gene}->range;
-            say "$gene: $multi_length (non-unique length)";
+        # build/populate unique_lengths hash
+        say $coverage_fh "-----";
+        for my $gene ( @{ $clustered_genes{$cluster_id} } ) {
+            $unique_lengths{$gene} = 0;
+            $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
+            say $coverage_fh "$gene: $unique_counts{$gene} (unique reads)";
+            say $coverage_fh "$gene: $unique_lengths{$gene} (unique length)";
         }
+        say $coverage_fh "";
     }
+    close $coverage_fh;
 
-    # build/populate unique_lengths hash
-    my %unique_lengths;
-    for my $gene ( keys %gene_set ) {
-        $unique_lengths{$gene} = 0;
-        $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
-    }
-
-    for ( sort keys %gene_set ) {
-        say "$_: $unique_counts{$_} (unique reads)";
-        say "$_: $unique_lengths{$_} (unique length)";
-    }
-
+    # compare max gene length to max_hash_size parameter from Number::Range
     my @lengths;
     push @lengths, $gene_lengths{$_} for keys %gene_lengths;
     my $max_length = max @lengths;

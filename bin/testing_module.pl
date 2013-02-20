@@ -26,11 +26,14 @@ $clusters{281} = ["Solyc01g096580.2.1|Solyc01g096590.2.1"];
 # use Data::Printer;
 # p %clusters;
 # exit;
-my $sam_dir = "../";
+my $sam_dir = "../sample_files/";
 my $out_dir = "../test_out/";
 
-# my @sam_files = "1.1.2_rep1_bwa0.6.2.100.sam";
-my @sam_files = "CLUSTER1001.sam";
+my @sam_files = "1.1.2_rep1_bwa0.6.2.100.sam";
+# my @sam_files = "CLUSTER281+1001.sam";
+# my @sam_files = "CLUSTER1001.sam";
+# my @sam_files = "H1_000_000.sam";
+# my @sam_files = "H100_000.sam";
 
 # my @sam_files = qw(1.1.2_rep1_bwa0.6.2.100.sam 1.1.2_rep1_bwa0.6.2.100.sam 1.1.2_rep1_bwa0.6.2.100.sam);
 # my $threads = 3;
@@ -48,14 +51,15 @@ my $sam_file = $sam_dir . "/" . $sam_files[0];
 # my $sam_file = $sam_files[0];
 
 my $assign = new Map::Redundant(
-    'sam_file'        => $sam_file,
-    'out_dir'         => $out_dir,
-    'gene_summary'    => 1,
-    'count_summary'   => 1,
-    'cluster_summary' => 1,
-    'size_summary'    => 1,
+    'sam_file'         => $sam_file,
+    'out_dir'          => $out_dir,
+    'gene_summary'     => 1,
+    'count_summary'    => 1,
+    'cluster_summary'  => 1,
+    'size_summary'     => 1,
+    'coverage_summary' => 1,
+    'verbose'          => 1,
 );
-
 $assign->identify_subclusters;
 $assign->summarize_subclusters;
 $assign->build_clusters;
