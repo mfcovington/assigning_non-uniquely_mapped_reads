@@ -7,6 +7,7 @@
 #
 package Map::Redundant;
 use Moose;
+use namespace::autoclean;
 use autodie;
 use feature 'say';
 use Number::Range;
@@ -526,4 +527,4 @@ sub calc_end {
     return $end;
 }
 
-1;
+__PACKAGE__->meta->make_immutable;
