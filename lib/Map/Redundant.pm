@@ -22,73 +22,73 @@ STDERR->autoflush(1);
 STDOUT->autoflush(1);
 
 has 'max_best' => (
-    is  => 'rw',
-    isa => 'Num',
+    is      => 'rw',
+    isa     => 'Num',
     default => 100,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'out_dir' => (
-    is  => 'rw',
-    isa => 'Str',
+    is      => 'rw',
+    isa     => 'Str',
     default => '../',
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'sam_dir' => (
-    is  => 'rw',
-    isa => 'Str',
+    is      => 'rw',
+    isa     => 'Str',
     default => '../',
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'delimiter' => (
-    is  => 'rw',
-    isa => 'Str',
+    is      => 'rw',
+    isa     => 'Str',
     default => '|',
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'gene_summary' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'count_summary' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'cluster_summary' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'size_summary' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'coverage_summary' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'verbose' => (
-    is  => 'rw',
-    isa => 'Bool',
+    is      => 'rw',
+    isa     => 'Bool',
     default => 0,
-    lazy => 1,
+    lazy    => 1,
 );
 
 has 'sam_file' => (
@@ -97,17 +97,17 @@ has 'sam_file' => (
 );
 
 has 'clusters_hash' => (
-    is => 'rw',
+    is  => 'rw',
     isa => 'HashRef',
 );
 
 has 'subclusters_hash' => (
-    is => 'rw',
+    is  => 'rw',
     isa => 'HashRef',
 );
 
 has 'clustered_genes_hash' => (
-    is => 'rw',
+    is  => 'rw',
     isa => 'HashRef',
 );
 
@@ -124,11 +124,12 @@ has 'id' => (
 );
 
 sub _make_dir {
-    my $self = shift;
+    my $self     = shift;
     my $dir_name = shift;
 
-    ( my $filename, $dir_name ) = fileparse( $self->out_file ) unless defined $dir_name;
-    make_path( $dir_name ) unless -e $dir_name;
+    ( my $filename, $dir_name ) = fileparse( $self->out_file )
+      unless defined $dir_name;
+    make_path($dir_name) unless -e $dir_name;
 }
 
 sub identify_subclusters {
@@ -186,7 +187,7 @@ sub identify_subclusters {
     close $sam_fh;
     close $genes_fh if $gene_summary;
 
-    $self->subclusters_hash(\%subclusters);
+    $self->subclusters_hash( \%subclusters );
 
     if ($count_summary) {
         open my $counts_fh, ">", "$out_dir/$id.counts";
@@ -195,10 +196,12 @@ sub identify_subclusters {
         say $counts_fh "# of unmapped: " . ( $unmapped_count // 0 );
 
         say $counts_fh "\n# of best hits";
-        say $counts_fh "$_:\t$best_count{$_}" for sort { $a <=> $b } keys %best_count;
+        say $counts_fh "$_:\t$best_count{$_}"
+          for sort { $a <=> $b } keys %best_count;
 
         say $counts_fh "\n# of suboptimal hits";
-        say $counts_fh "$_:\t$subopt_count{$_}" for sort { $a <=> $b } keys %subopt_count;
+        say $counts_fh "$_:\t$subopt_count{$_}"
+          for sort { $a <=> $b } keys %subopt_count;
 
         close $counts_fh;
     }
@@ -226,12 +229,12 @@ sub summarize_subclusters {
 sub build_clusters {
     my $self = shift;
 
-    my %subclusters = %{ $self->subclusters_hash };
-    my $id = $self->id;
+    my %subclusters     = %{ $self->subclusters_hash };
+    my $id              = $self->id;
     my $cluster_summary = $self->cluster_summary;
-    my $size_summary = $self->size_summary;
-    my $out_dir = $self->out_dir;
-    my $verbose = $self->verbose;
+    my $size_summary    = $self->size_summary;
+    my $out_dir         = $self->out_dir;
+    my $verbose         = $self->verbose;
 
     say "Building Clusters" if $verbose;
 
@@ -268,7 +271,6 @@ sub build_clusters {
                   for sort keys %current_cluster;
             }
             $cluster_sizes{ scalar keys %current_cluster }++;
-            my @matched_subclusters =
             $clustered_genes{$cluster_number} = [ sort keys %current_cluster ];
         }
     }
@@ -286,37 +288,41 @@ sub build_clusters {
 
     my %clustered_subclusters;
     for my $cluster_id ( keys %clustered_genes ) {
-        my $regex = join "|", map { quotemeta } @{ $clustered_genes{$cluster_id} };
+        my $regex = join "|",
+          map { quotemeta } @{ $clustered_genes{$cluster_id} };
         $clustered_subclusters{$cluster_id} = [];
         for ( sort keys %subclusters ) {
             push $clustered_subclusters{$cluster_id}, $_ if /$regex/;
         }
     }
 
-    $self->clustered_genes_hash(\%clustered_genes);
-    $self->clusters_hash(\%clustered_subclusters);
+    $self->clustered_genes_hash( \%clustered_genes );
+    $self->clusters_hash( \%clustered_subclusters );
 }
 
 sub calculate_coverage {    # adapted from non-unique_length.pl
-
     my $self = shift;
-    # my $sam_filename = $self->sam_dir . "/" . $self->sam_file;
-    my $sam_filename = $self->sam_file;
-    my %clustered_genes = %{ $self->clustered_genes_hash };
-    my %clusters = %{ $self->clusters_hash };
-    my $max_best = $self->max_best;
-    my $delimiter = $self->delimiter;
-    my $verbose = $self->verbose;
-    my $id = $self->id;
+
+    my $sam_filename     = $self->sam_file;
+    my %clustered_genes  = %{ $self->clustered_genes_hash };
+    my %clusters         = %{ $self->clusters_hash };
+    my $max_best         = $self->max_best;
+    my $delimiter        = $self->delimiter;
+    my $verbose          = $self->verbose;
+    my $id               = $self->id;
     my $coverage_summary = $self->coverage_summary;
-    my $out_dir = $self->out_dir;
+    my $out_dir          = $self->out_dir;
     $self->_make_dir($out_dir);
 
     say "Calculating Coverage" if $verbose;
 
     # Number::Range prints unnecessary warnings; therefore, turn them off
     no warnings 'Number::Range';
-    local $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|};
+    local $SIG{__WARN__} = sub {
+        warn $_[0]
+          unless $_[0] =~
+m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|;
+    };
 
     # Number::Range stores large ranges in a way that causes problems
     # when calculating total lengths, unless max_hash_size is high enough.
@@ -359,7 +365,6 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     # for a cluster, read in seqreads. if a gene matches, consider read. increment unique_count. cluster, if applicable, else deal with multi_read
     # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
-    # my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
     open my $sam_fh, "<", $sam_filename;
 
     my $gene_regex = join "|", map { quotemeta } keys %gene_set;
@@ -370,7 +375,8 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     while (<$sam_fh>) {
         $total_count++;
-        say "Processing read # $total_count" if $verbose && $total_count % 250_000 == 0;
+        say "Processing read # $total_count"
+          if $verbose && $total_count % 250_000 == 0;
         next unless /$gene_regex/;
 
         # collect gene lengths
@@ -385,7 +391,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
           best_hits( $_, $max_best, $delimiter );
 
         # bypass instances where genes of interest are only suboptimal hits
-        next unless join ("-", @best_hits) =~ /$gene_regex/;
+        next unless join( "-", @best_hits ) =~ /$gene_regex/;
 
         for my $gene (@best_hits) {
             $counts{$gene}++ if /\Q$gene\E/;
@@ -415,7 +421,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
         # populate range data structure
         my $index = 0;
-        for ( sort keys %{ $ranges{$subcluster} }) {
+        for ( sort keys %{ $ranges{$subcluster} } ) {
             $ranges{$subcluster}{$_}->addrange( $positions[$index] );
             $index++;
         }
@@ -428,7 +434,7 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
     my %gene_multi_lengths;
     my %unique_lengths;
     open my $coverage_fh, ">", "$out_dir/$id.coverage" if $coverage_summary;
-    for my $cluster_id ( sort {$a <=> $b} keys %clusters ) {
+    for my $cluster_id ( sort { $a <=> $b } keys %clusters ) {
         say $coverage_fh "CLUSTER: $cluster_id";
         for my $subcluster ( @{ $clusters{$cluster_id} } ) {
 
@@ -439,10 +445,12 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
             }
 
             # populate gene_multi_lengths hash
-            say $coverage_fh "$subcluster: $subcluster_counts{$subcluster} reads";
+            say $coverage_fh
+              "$subcluster: $subcluster_counts{$subcluster} reads";
 
             for my $gene ( sort keys $ranges{$subcluster} ) {
-                $gene_multi_lengths{$gene}->addrange( $ranges{$subcluster}{$gene}->range );
+                $gene_multi_lengths{$gene}
+                  ->addrange( $ranges{$subcluster}{$gene}->range );
                 my $multi_length;
                 $multi_length++ for $ranges{$subcluster}{$gene}->range;
                 say $coverage_fh "$gene: $multi_length (non-unique length)";
@@ -472,16 +480,14 @@ You should probably increase \$max_hash_size, just in case.
 WARNING
 }
 
-sub best_hits {
-    # my $self = shift;
-    # adapted from harvest_gene_ids.pl
+sub best_hits {    # adapted from harvest_gene_ids.pl
     my ( $read, $max_best, $delimiter ) = @_;
     my ($best_hits) = $read =~ m|X0:i:(\d+)|;
     my @genes = $read =~ m|(Solyc\d{2}g\d{6}\.\d\.\d)|g;
 
     my @bests = @genes[ 0 .. min( $#genes, $best_hits - 1, $max_best - 1 ) ];
     my $best_hits_string = join $delimiter, sort @bests;
-    my $best_hits_count  = scalar @bests;
+    my $best_hits_count = scalar @bests;
     return ( $best_hits_string, $best_hits_count, @bests );
 }
 
