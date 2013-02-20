@@ -88,7 +88,7 @@ for ( keys %gene_set ) {
 
 # for a cluster, read in seqreads. if a gene matches, consider read. increment unique_count. cluster, if applicable, else deal with multi_read
 # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
-my $sam_filename = "1.1.2_rep1_bwa0.6.2.100.sam";
+my $sam_filename = "../1.1.2_rep1_bwa0.6.2.100.sam";
 open my $sam_fh, "<", $sam_filename;
 
 my $gene_regex = join "|", map { quotemeta } keys %gene_set;
