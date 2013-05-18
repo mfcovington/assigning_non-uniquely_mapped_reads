@@ -356,10 +356,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
 
     # build unique_ranges hash
     my %unique_ranges;
-    for ( keys %gene_set ) {
-        $unique_ranges{$_} = Number::Range->new();
-        $unique_ranges{$_}->set_max_hash_size($max_hash_size);
-    }
+    $unique_ranges{$_} = {} for keys %gene_set;
 
     # for a cluster, read in seqreads. if a gene matches, consider read. increment unique_count. cluster, if applicable, else deal with multi_read
     # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
@@ -411,7 +408,8 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
         # also populate %unique_ranges
         if ( $best_count == 1 ) {
             $unique_counts{ $best_hits[0] }++;
-            $unique_ranges{ $best_hits[0] }->addrange( $positions[0] );
+            my ( $start, $end ) = split /\.{2}/, $positions[0];
+            add_range( $start, $end, $unique_ranges{ $best_hits[0] });
             next;
         }
         $subcluster_counts{$subcluster}++;
@@ -423,6 +421,10 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
             $ranges{$subcluster}{$_}->addrange( $positions[$index] );
             $index++;
         }
+    }
+
+    for ( keys %unique_ranges ) {
+        collapse_ranges( $unique_ranges{ $_ } );
     }
 
     die "Something may be wrong with the sam file header..."
@@ -459,7 +461,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
         say $coverage_fh "-----";
         for my $gene ( @{ $clustered_genes{$cluster_id} } ) {
             $unique_lengths{$gene} = 0;
-            $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
+            $unique_lengths{$gene} = range_length( $unique_ranges{$gene} );
             say $coverage_fh "$gene: $unique_counts{$gene} (unique reads)";
             say $coverage_fh "$gene: $unique_lengths{$gene} (unique length)";
         }
@@ -539,6 +541,7 @@ sub add_range {
 
 sub collapse_ranges {
     my $range_ref = shift;
+    return if scalar keys %$range_ref == 0;
 
     my @cur_interval;
     my @result;
@@ -566,9 +569,9 @@ sub collapse_ranges {
 
 sub range_length {
     my $range_ref = shift;
-    my $length;
+    my $length = 0;
     for ( keys %$range_ref ) {
-        $length += $range_ref->{$_} - $_ + 1;
+        $length += $range_ref->{$_} - $_ + 1 if $range_ref->{$_};
     }
     return $length;
 }
