@@ -16,12 +16,15 @@ use Map::Redundant;
 
 my $sam_dir = "../sample_files/";
 my $out_dir = "../test_out/";
+# my $sam_dir = "../eXpress/bwa/";
+# my $out_dir = "../eXpress/bwa/";
 
 # my @sam_files = "1.1.2_rep1_bwa0.6.2.100.sam";
 # my @sam_files = "CLUSTER281+1001.sam";
-my @sam_files = "CLUSTER1001.sam";
+# my @sam_files = "CLUSTER1001.sam";
 # my @sam_files = "H1_000_000.sam";
-# my @sam_files = "H100_000.sam";
+my @sam_files = "H100_000.sam";
+# my @sam_files = "IL1.1.2_1.filtered.sam";
 
 my $sam_file = $sam_dir . "/" . $sam_files[0];
 
