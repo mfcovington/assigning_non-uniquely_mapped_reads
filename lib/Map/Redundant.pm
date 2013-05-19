@@ -10,7 +10,6 @@ use Moose;
 use namespace::autoclean;
 use autodie;
 use feature 'say';
-use Number::Range;
 use List::Util qw(min max sum);
 use File::Basename;
 use File::Path 'make_path';
@@ -314,21 +313,6 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     say "Calculating Coverage" if $verbose;
 
-    # Number::Range prints unnecessary warnings; therefore, turn them off
-    no warnings 'Number::Range';
-    local $SIG{__WARN__} = sub {
-        warn $_[0]
-          unless $_[0] =~
-m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|;
-    };
-
-    # Number::Range stores large ranges in a way that causes problems
-    # when calculating total lengths, unless max_hash_size is high enough.
-    # Since there is a (mis-annotated!) gene of 219kb in my dataset:
-    my $max_hash_size = 220_000;
-    # my $max_hash_size = 10_000;
-    # my $max_hash_size = 52;   # 52 and lower cause problems
-
     my %gene_set;
     my %unique_counts;
     my %ranges;
@@ -343,11 +327,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
             $unique_counts{$_} = 0 for split /\|/, $subcluster;
 
             # build ranges data structure (HoHoO)
-            $ranges{$subcluster} = ();
-            for ( split /\|/, $subcluster ) {
-                $ranges{$subcluster}{$_} = Number::Range->new();
-                $ranges{$subcluster}{$_}->set_max_hash_size($max_hash_size);
-            }
+            $ranges{$subcluster}{$_} = {} for split /\|/, $subcluster;
 
             # build subcluster counts hash
             $subcluster_counts{$_} = 0 for @{ $clusters{$cluster_id} };
@@ -356,10 +336,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
 
     # build unique_ranges hash
     my %unique_ranges;
-    for ( keys %gene_set ) {
-        $unique_ranges{$_} = Number::Range->new();
-        $unique_ranges{$_}->set_max_hash_size($max_hash_size);
-    }
+    $unique_ranges{$_} = {} for keys %gene_set;
 
     # for a cluster, read in seqreads. if a gene matches, consider read. increment unique_count. cluster, if applicable, else deal with multi_read
     # deal w/ multi_read = extract subcluster ID to use as hash key for hash of arrays (each element in array is read or at least relevant info of read)
@@ -411,7 +388,8 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
         # also populate %unique_ranges
         if ( $best_count == 1 ) {
             $unique_counts{ $best_hits[0] }++;
-            $unique_ranges{ $best_hits[0] }->addrange( $positions[0] );
+            my ( $start, $end ) = split /\.{2}/, $positions[0];
+            add_range( $start, $end, $unique_ranges{ $best_hits[0] });
             next;
         }
         $subcluster_counts{$subcluster}++;
@@ -419,9 +397,20 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
 
         # populate range data structure
         my $index = 0;
-        for ( sort keys %{ $ranges{$subcluster} } ) {
-            $ranges{$subcluster}{$_}->addrange( $positions[$index] );
+        for ( keys %{ $ranges{$subcluster} } ) {
+            my ( $start, $end ) = split /\.{2}/, $positions[$index];
+            add_range( $start, $end, $ranges{$subcluster}{$_} );
             $index++;
+        }
+    }
+
+    for ( keys %unique_ranges ) {
+        collapse_ranges( $unique_ranges{ $_ } );
+    }
+
+    for my $subcluster ( keys %ranges ) {
+        for my $gene ( keys $ranges{$subcluster} ) {
+            collapse_ranges( $ranges{$subcluster}{$gene} );
         }
     }
 
@@ -429,28 +418,17 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
       unless
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
-    my %gene_multi_lengths;
     my %unique_lengths;
     open my $coverage_fh, ">", "$out_dir/$id.coverage" if $coverage_summary;
     for my $cluster_id ( sort { $a <=> $b } keys %clusters ) {
         say $coverage_fh "CLUSTER: $cluster_id";
         for my $subcluster ( @{ $clusters{$cluster_id} } ) {
-
-            # build gene_multi_lengths hash
-            for ( split /\|/, $subcluster ) {
-                $gene_multi_lengths{$_} = Number::Range->new();
-                $gene_multi_lengths{$_}->set_max_hash_size($max_hash_size);
-            }
-
-            # populate gene_multi_lengths hash
             say $coverage_fh
               "$subcluster: $subcluster_counts{$subcluster} reads";
 
             for my $gene ( sort keys $ranges{$subcluster} ) {
-                $gene_multi_lengths{$gene}
-                  ->addrange( $ranges{$subcluster}{$gene}->range );
                 my $multi_length;
-                $multi_length++ for $ranges{$subcluster}{$gene}->range;
+                $multi_length = range_length( $ranges{$subcluster}{$gene} );
                 say $coverage_fh "$gene: $multi_length (non-unique length)";
             }
         }
@@ -459,23 +437,13 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
         say $coverage_fh "-----";
         for my $gene ( @{ $clustered_genes{$cluster_id} } ) {
             $unique_lengths{$gene} = 0;
-            $unique_lengths{$gene}++ for $unique_ranges{$gene}->range;
+            $unique_lengths{$gene} = range_length( $unique_ranges{$gene} );
             say $coverage_fh "$gene: $unique_counts{$gene} (unique reads)";
             say $coverage_fh "$gene: $unique_lengths{$gene} (unique length)";
         }
         say $coverage_fh "";
     }
     close $coverage_fh;
-
-    # compare max gene length to max_hash_size parameter from Number::Range
-    my @lengths;
-    push @lengths, $gene_lengths{$_} for keys %gene_lengths;
-    my $max_length = max @lengths;
-    say <<WARNING if $max_length > $max_hash_size;
-The maximum gene length ($max_length) is greater than
-the maximum hash size ($max_hash_size).
-You should probably increase \$max_hash_size, just in case.
-WARNING
 }
 
 sub best_hits {    # adapted from harvest_gene_ids.pl
@@ -525,6 +493,53 @@ sub calc_end {
     my $end    = $start + $length - 1;
 
     return $end;
+}
+
+sub add_range {
+    my ( $start, $end, $range_ref ) = @_;
+    if ( exists $range_ref->{$start} ) {
+        $range_ref->{$start} = max( $end, $range_ref->{$start} );
+    }
+    else {
+        $range_ref->{$start} = $end;
+    }
+}
+
+sub collapse_ranges {
+    my $range_ref = shift;
+    return if scalar keys %$range_ref == 0;
+
+    my @cur_interval;
+    my @result;
+    my %temp_ranges;
+
+    for my $start ( sort { $a <=> $b } keys %$range_ref ) {
+        unless (@cur_interval) {
+            @cur_interval = ( $start, $range_ref->{$start} );
+            next;
+        }
+        my ( $cstart, $cend ) = @cur_interval;
+        if ( $start <= $cend + 1 ) {
+            @cur_interval = ( $cstart, max( $range_ref->{$start}, $cend ) );
+        }
+        else {
+            push @result, @cur_interval;
+            $temp_ranges{ $cur_interval[0] } = $cur_interval[1];
+            @cur_interval = ( $start, $range_ref->{$start} );
+        }
+    }
+    push @result, @cur_interval;
+    $temp_ranges{ $cur_interval[0] } = $cur_interval[1];
+    %$range_ref = %temp_ranges;
+}
+
+sub range_length {
+    my $range_ref = shift;
+    my $length = 0;
+    for ( keys %$range_ref ) {
+        $length += $range_ref->{$_} - $_ + 1 if $range_ref->{$_};
+    }
+    return $length;
 }
 
 __PACKAGE__->meta->make_immutable;
