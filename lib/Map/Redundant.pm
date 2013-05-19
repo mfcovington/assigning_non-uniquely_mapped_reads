@@ -10,7 +10,6 @@ use Moose;
 use namespace::autoclean;
 use autodie;
 use feature 'say';
-use Number::Range;
 use List::Util qw(min max sum);
 use File::Basename;
 use File::Path 'make_path';
@@ -314,21 +313,6 @@ sub calculate_coverage {    # adapted from non-unique_length.pl
 
     say "Calculating Coverage" if $verbose;
 
-    # Number::Range prints unnecessary warnings; therefore, turn them off
-    no warnings 'Number::Range';
-    local $SIG{__WARN__} = sub {
-        warn $_[0]
-          unless $_[0] =~
-m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.|;
-    };
-
-    # Number::Range stores large ranges in a way that causes problems
-    # when calculating total lengths, unless max_hash_size is high enough.
-    # Since there is a (mis-annotated!) gene of 219kb in my dataset:
-    my $max_hash_size = 220_000;
-    # my $max_hash_size = 10_000;
-    # my $max_hash_size = 52;   # 52 and lower cause problems
-
     my %gene_set;
     my %unique_counts;
     my %ranges;
@@ -460,16 +444,6 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
         say $coverage_fh "";
     }
     close $coverage_fh;
-
-    # compare max gene length to max_hash_size parameter from Number::Range
-    my @lengths;
-    push @lengths, $gene_lengths{$_} for keys %gene_lengths;
-    my $max_length = max @lengths;
-    say <<WARNING if $max_length > $max_hash_size;
-The maximum gene length ($max_length) is greater than
-the maximum hash size ($max_hash_size).
-You should probably increase \$max_hash_size, just in case.
-WARNING
 }
 
 sub best_hits {    # adapted from harvest_gene_ids.pl
