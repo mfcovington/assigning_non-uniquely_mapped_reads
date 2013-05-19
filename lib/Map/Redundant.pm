@@ -434,26 +434,15 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
       unless
       join( "", sort keys %gene_set ) eq join( "", sort keys %gene_lengths );
 
-    my %gene_multi_lengths;
     my %unique_lengths;
     open my $coverage_fh, ">", "$out_dir/$id.coverage" if $coverage_summary;
     for my $cluster_id ( sort { $a <=> $b } keys %clusters ) {
         say $coverage_fh "CLUSTER: $cluster_id";
         for my $subcluster ( @{ $clusters{$cluster_id} } ) {
-
-            # build gene_multi_lengths hash
-            for ( split /\|/, $subcluster ) {
-                $gene_multi_lengths{$_} = Number::Range->new();
-                $gene_multi_lengths{$_}->set_max_hash_size($max_hash_size);
-            }
-
-            # populate gene_multi_lengths hash
             say $coverage_fh
               "$subcluster: $subcluster_counts{$subcluster} reads";
 
             for my $gene ( sort keys $ranges{$subcluster} ) {
-                $gene_multi_lengths{$gene}
-                  ->addrange( $ranges{$subcluster}{$gene}->range );
                 my $multi_length;
                 $multi_length = range_length( $ranges{$subcluster}{$gene} );
                 say $coverage_fh "$gene: $multi_length (non-unique length)";
