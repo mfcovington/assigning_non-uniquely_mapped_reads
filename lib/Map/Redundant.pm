@@ -343,11 +343,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
             $unique_counts{$_} = 0 for split /\|/, $subcluster;
 
             # build ranges data structure (HoHoO)
-            $ranges{$subcluster} = ();
-            for ( split /\|/, $subcluster ) {
-                $ranges{$subcluster}{$_} = Number::Range->new();
-                $ranges{$subcluster}{$_}->set_max_hash_size($max_hash_size);
-            }
+            $ranges{$subcluster}{$_} = {} for split /\|/, $subcluster;
 
             # build subcluster counts hash
             $subcluster_counts{$_} = 0 for @{ $clusters{$cluster_id} };
@@ -417,14 +413,21 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
 
         # populate range data structure
         my $index = 0;
-        for ( sort keys %{ $ranges{$subcluster} } ) {
-            $ranges{$subcluster}{$_}->addrange( $positions[$index] );
+        for ( keys %{ $ranges{$subcluster} } ) {
+            my ( $start, $end ) = split /\.{2}/, $positions[$index];
+            add_range( $start, $end, $ranges{$subcluster}{$_} );
             $index++;
         }
     }
 
     for ( keys %unique_ranges ) {
         collapse_ranges( $unique_ranges{ $_ } );
+    }
+
+    for my $subcluster ( keys %ranges ) {
+        for my $gene ( keys $ranges{$subcluster} ) {
+            collapse_ranges( $ranges{$subcluster}{$gene} );
+        }
     }
 
     die "Something may be wrong with the sam file header..."
@@ -452,7 +455,7 @@ m|Use of uninitialized value \$previous in string at .*Number/Range.pm line \d+.
                 $gene_multi_lengths{$gene}
                   ->addrange( $ranges{$subcluster}{$gene}->range );
                 my $multi_length;
-                $multi_length++ for $ranges{$subcluster}{$gene}->range;
+                $multi_length = range_length( $ranges{$subcluster}{$gene} );
                 say $coverage_fh "$gene: $multi_length (non-unique length)";
             }
         }
